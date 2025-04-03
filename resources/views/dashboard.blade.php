@@ -4,7 +4,7 @@
             <div class="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
                 <div class="flex flex-col gap-2">
                     <h3 class="text-lg font-semibold">Monthly Revenue</h3>
-                    <p class="text-2xl font-bold">$24,500</p>
+                    <p class="text-2xl font-bold">£24,500</p>
                     <p class="text-sm text-green-600 dark:text-green-400">+12% from last month</p>
                     
                 </div>

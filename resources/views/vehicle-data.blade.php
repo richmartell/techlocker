@@ -16,6 +16,8 @@
                                     id="registration" 
                                     type="text" 
                                     placeholder="e.g. AB12CDE"
+                                    class="uppercase"
+                                    oninput="this.value = this.value.toUpperCase()"
                                 />
                             </flux:field>
                             
