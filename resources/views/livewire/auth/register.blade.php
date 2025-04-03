@@ -42,10 +42,22 @@ new #[Layout('components.layouts.auth')] class extends Component {
     <x-auth-session-status class="text-center" :status="session('status')" />
 
     <form wire:submit="register" class="flex flex-col gap-6">
+
+        <!-- Name -->
+        <flux:input
+            wire:model="business"
+            :label="__('Business Name')"
+            type="text"
+            required
+            autofocus
+            autocomplete="name"
+            :placeholder="__('Business name')"
+        />
+        
         <!-- Name -->
         <flux:input
             wire:model="name"
-            :label="__('Name')"
+            :label="__('Your Name')"
             type="text"
             required
             autofocus
