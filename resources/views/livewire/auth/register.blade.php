@@ -20,14 +20,27 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public function register(): void
     {
         $validated = $this->validate([
+            'business' => ['required', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
+        // Create the account first
+        $account = \App\Models\Account::create([
+            'company_name' => $validated['business']
+        ]);
 
-        event(new Registered(($user = User::create($validated))));
+        // Create the user with the account_id
+        $user = User::create([
+            'account_id' => $account->id,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'is_admin' => true, // First user is admin
+        ]);
+
+        event(new Registered($user));
 
         Auth::login($user);
 
