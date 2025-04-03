@@ -23,6 +23,11 @@ Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
+// Add Vehicle Data route
+Route::view('vehicle-data', 'vehicle-data')
+    ->middleware(['auth', 'verified'])
+    ->name('vehicle-data');
+
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
