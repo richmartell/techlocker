@@ -9,11 +9,12 @@
                     <div class="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
                         <h3 class="text-lg font-semibold mb-4">Find Vehicle Data</h3>
                         
-                        <form class="space-y-4">
+                        <form class="space-y-4" action="{{ route('vehicle-details', ['registration' => 'placeholder']) }}" method="GET" onsubmit="event.preventDefault(); const reg = this.registration.value.trim(); if(reg) window.location.href = '{{ url('vehicle') }}/' + reg;">
                             <flux:field>
                                 <flux:label for="registration">Registration Number</flux:label>
                                 <flux:input 
                                     id="registration" 
+                                    name="registration"
                                     type="text" 
                                     placeholder="e.g. AB12CDE"
                                     class="uppercase"
@@ -27,11 +28,12 @@
                             
                             <flux:field>
                                 <flux:label for="make">Make</flux:label>
-                                <flux:select id="make">
+                                <flux:select id="make" name="make">
                                     <option value="">Select Make</option>
                                     <option value="audi">Audi</option>
                                     <option value="bmw">BMW</option>
                                     <option value="ford">Ford</option>
+                                    <option value="land-rover">Land Rover</option>
                                     <option value="mercedes">Mercedes</option>
                                     <option value="toyota">Toyota</option>
                                     <option value="volkswagen">Volkswagen</option>
@@ -40,21 +42,21 @@
                             
                             <flux:field>
                                 <flux:label for="model">Model</flux:label>
-                                <flux:select id="model" disabled>
+                                <flux:select id="model" name="model" disabled>
                                     <option value="">Select Model</option>
                                 </flux:select>
                             </flux:field>
                             
                             <flux:field>
                                 <flux:label for="year">Year</flux:label>
-                                <flux:select id="year" disabled>
+                                <flux:select id="year" name="year" disabled>
                                     <option value="">Select Year</option>
                                 </flux:select>
                             </flux:field>
                             
                             <flux:field>
                                 <flux:label for="engine">Engine</flux:label>
-                                <flux:select id="engine" disabled>
+                                <flux:select id="engine" name="engine" disabled>
                                     <option value="">Select Engine</option>
                                 </flux:select>
                             </flux:field>
@@ -75,10 +77,12 @@
                             <flux:card class="p-3">
                                 <div class="flex justify-between items-center">
                                     <div>
-                                        <flux:heading size="sm">BMW 3 Series (2019)</flux:heading>
-                                        <flux:text class="text-sm text-neutral-500">2.0L Diesel, 190hp</flux:text>
+                                        <flux:heading size="sm">Land Rover Defender 90 (2020)</flux:heading>
+                                        <flux:text class="text-sm text-neutral-500">2.0L P300, 300hp</flux:text>
                                     </div>
-                                    <flux:button variant="primary" size="sm">View</flux:button>
+                                    <a href="{{ url('vehicle/MS02 MUD') }}">
+                                        <flux:button variant="primary" size="sm">View</flux:button>
+                                    </a>
                                 </div>
                             </flux:card>
                             
