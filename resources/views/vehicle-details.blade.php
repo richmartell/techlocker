@@ -51,10 +51,10 @@
                             <h3 class="text-lg font-semibold mb-4">Vehicle Image</h3>
                             <div class="flex items-center justify-center h-full">
                                 <img 
-                                    src="{{ asset('images/defender.jpeg') }}" 
+                                    src="{{ asset('images/defender.jpg') }}" 
                                     alt="{{ $make }} {{ $model }}"
                                     class="w-full h-auto object-cover rounded-lg shadow-sm"
-                                    onerror="this.src='{{ asset('images/defender.jpeg') }}'; this.onerror=null;"
+                                    onerror="this.src='{{ asset('images/defender.jpg') }}'; this.onerror=null;"
                                 />
                             </div>
                         </div>
