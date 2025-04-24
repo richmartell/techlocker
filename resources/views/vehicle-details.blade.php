@@ -2,7 +2,13 @@
     <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
         <div class="p-6 h-full flex-1 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
                 <div class="flex flex-col gap-4">
-                    <h2 class="text-xl font-bold">{{ $registration }} - {{ $make }} {{ $model }}</h2>
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-bold">{{ $registration }} - {{ $make }} {{ $model }}</h2>
+                        <div class="flex space-x-2">
+                            <a href="{{ route('vehicle-details', ['registration' => $registration]) }}" class="px-4 py-2 rounded-lg bg-primary-500 text-white shadow-sm hover:bg-primary-600 transition">Vehicle Info</a>
+                            <a href="{{ route('vehicle-diagnostics', ['registration' => $registration]) }}" class="px-4 py-2 rounded-lg bg-neutral-200 dark:bg-neutral-700 shadow-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 transition">DiagnosticsAI</a>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Vehicle Information Card -->
                         <div class="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">

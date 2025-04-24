@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
+use App\Http\Controllers\DiagnosticsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,6 +57,16 @@ Route::get('vehicle/{registration}', function ($registration) {
     ]);
 })->middleware(['auth', 'verified'])
   ->name('vehicle-details');
+
+// Add DiagnosticsAI route
+Route::get('vehicle/{registration}/diagnostics', [DiagnosticsController::class, 'show'])
+    ->middleware(['auth', 'verified'])
+    ->name('vehicle-diagnostics');
+
+// Add DiagnosticsAI message processing route
+Route::post('vehicle/{registration}/diagnostics/process', [DiagnosticsController::class, 'processMessage'])
+    ->middleware(['auth', 'verified'])
+    ->name('process-diagnostics');
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
