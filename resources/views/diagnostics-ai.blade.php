@@ -5,6 +5,9 @@
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold">DiagnosticsAI Assistant</h2>
                     <div class="flex gap-2">
+                        <button id="testApiBtn" class="text-sm px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-200 dark:hover:bg-blue-800 transition">
+                            Test API Connection
+                        </button>
                         <button id="clearChat" class="text-sm px-3 py-1 bg-neutral-100 dark:bg-neutral-700 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-600 transition">
                             Clear Chat
                         </button>
@@ -131,6 +134,9 @@
                 const formData = new FormData(diagnosticsForm);
                 const registration = formData.get('registration');
                 
+                console.log('Sending message to API:', message);
+                console.log('Vehicle Registration:', registration);
+                
                 fetch(`/vehicle/${registration}/diagnostics/process`, {
                     method: 'POST',
                     headers: {
@@ -142,20 +148,26 @@
                         registration: registration
                     })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.json();
+                })
                 .then(data => {
                     // Hide loading indicator
                     loadingMessage.classList.add('hidden');
+                    
+                    console.log('API response data:', data);
                     
                     // Add AI response to chat
                     if (data.success) {
                         addAIMessage(data.message);
                     } else {
+                        console.error('Error from API:', data.error || 'Unknown error');
                         addAIMessage("I'm sorry, I couldn't process your request. Please try again.");
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('Fetch error:', error);
                     loadingMessage.classList.add('hidden');
                     addAIMessage("I'm sorry, there was an error processing your request. Please try again.");
                 });
@@ -245,6 +257,80 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
+            });
+
+            // Test API connection button
+            const testApiBtn = document.getElementById('testApiBtn');
+            testApiBtn.addEventListener('click', function() {
+                testApiBtn.textContent = 'Testing...';
+                testApiBtn.disabled = true;
+                
+                console.log('Testing OpenAI API connection...');
+                
+                fetch('/diagnostics/test-api')
+                    .then(response => {
+                        console.log('API test response status:', response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('API test results:', data);
+                        
+                        let message;
+                        if (data.connection_status === 'success') {
+                            message = `✅ API Connection Success!\nModel: ${data.model}\nResponse: "${data.test_response}"`;
+                        } else if (data.connection_status === 'no_key') {
+                            message = '⚠️ No API key configured. Please add your OpenAI API key in the settings.';
+                        } else {
+                            message = `❌ API Connection Failed: ${data.error || 'Unknown error'}`;
+                        }
+                        
+                        // Show results in a temporary message
+                        const resultDiv = document.createElement('div');
+                        resultDiv.className = 'fixed top-4 right-4 p-4 rounded-lg shadow-lg max-w-md';
+                        
+                        if (data.connection_status === 'success') {
+                            resultDiv.classList.add('bg-green-50', 'dark:bg-green-900/30', 'border', 'border-green-200', 'dark:border-green-800');
+                        } else if (data.connection_status === 'no_key') {
+                            resultDiv.classList.add('bg-yellow-50', 'dark:bg-yellow-900/30', 'border', 'border-yellow-200', 'dark:border-yellow-800');
+                        } else {
+                            resultDiv.classList.add('bg-red-50', 'dark:bg-red-900/30', 'border', 'border-red-200', 'dark:border-red-800');
+                        }
+                        
+                        resultDiv.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1 mr-4">
+                                    <p class="whitespace-pre-wrap text-sm">${message}</p>
+                                </div>
+                                <button class="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        `;
+                        
+                        document.body.appendChild(resultDiv);
+                        
+                        resultDiv.querySelector('button').addEventListener('click', function() {
+                            resultDiv.remove();
+                        });
+                        
+                        setTimeout(() => {
+                            if (document.body.contains(resultDiv)) {
+                                resultDiv.remove();
+                            }
+                        }, 10000);
+                        
+                        testApiBtn.textContent = 'Test API Connection';
+                        testApiBtn.disabled = false;
+                    })
+                    .catch(error => {
+                        console.error('API test error:', error);
+                        testApiBtn.textContent = 'Test API Connection';
+                        testApiBtn.disabled = false;
+                        
+                        alert('Error testing API connection: ' + error.message);
+                    });
             });
         });
     </script>

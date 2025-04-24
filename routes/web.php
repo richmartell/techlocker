@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 use App\Http\Controllers\DiagnosticsController;
+use App\Http\Controllers\ApiSettingsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,12 +69,21 @@ Route::post('vehicle/{registration}/diagnostics/process', [DiagnosticsController
     ->middleware(['auth', 'verified'])
     ->name('process-diagnostics');
 
+// Add route to test OpenAI API connection
+Route::get('diagnostics/test-api', [DiagnosticsController::class, 'testApiConnection'])
+    ->middleware(['auth', 'verified'])
+    ->name('test-diagnostics-api');
+
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
+    
+    // API Settings Routes
+    Route::get('settings/api', [ApiSettingsController::class, 'show'])->name('settings.api');
+    Route::post('settings/api', [ApiSettingsController::class, 'save'])->name('settings.api.save');
 });
 
 require __DIR__.'/auth.php';
