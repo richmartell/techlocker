@@ -41,4 +41,8 @@ return [
         'organization' => env('OPENAI_ORGANIZATION'), // Optional
     ],
 
+    'dvla' => [
+        'api_key' => env('DVLA_API_KEY'),
+    ],
+
 ];

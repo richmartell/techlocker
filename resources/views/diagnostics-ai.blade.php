@@ -65,6 +65,17 @@
                     </div>
                 </div>
                 
+                <!-- Loading indicator at bottom of chat (hidden by default) -->
+                <div id="bottomLoadingIndicator" class="fixed bottom-28 left-1/2 transform -translate-x-1/2 hidden">
+                    <div class="flex items-center gap-2 bg-white dark:bg-neutral-800 shadow-lg rounded-full px-4 py-2 border border-neutral-200 dark:border-neutral-700">
+                        <svg class="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-sm text-neutral-600 dark:text-neutral-300">Thinking...</span>
+                    </div>
+                </div>
+                
                 <!-- Message Input -->
                 <form id="diagnosticsForm" class="border rounded-lg p-3 flex items-end">
                     <input type="hidden" name="registration" value="{{ $registration }}">
@@ -126,8 +137,9 @@
                 // Clear input
                 messageInput.value = '';
                 
-                // Show loading indicator
+                // Show loading indicators
                 loadingMessage.classList.remove('hidden');
+                document.getElementById('bottomLoadingIndicator').classList.remove('hidden');
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 
                 // Send request to server
@@ -153,8 +165,9 @@
                     return response.json();
                 })
                 .then(data => {
-                    // Hide loading indicator
+                    // Hide loading indicators
                     loadingMessage.classList.add('hidden');
+                    document.getElementById('bottomLoadingIndicator').classList.add('hidden');
                     
                     console.log('API response data:', data);
                     
@@ -169,6 +182,7 @@
                 .catch(error => {
                     console.error('Fetch error:', error);
                     loadingMessage.classList.add('hidden');
+                    document.getElementById('bottomLoadingIndicator').classList.add('hidden');
                     addAIMessage("I'm sorry, there was an error processing your request. Please try again.");
                 });
             });
