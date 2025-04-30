@@ -20,8 +20,6 @@ class Vehicle extends Model
         'fuel_type',
         'year_of_manufacture',
         'co2_emissions',
-        'make',
-        'model',
         'marked_for_export',
         'month_of_first_registration',
         'mot_status',
@@ -41,12 +39,16 @@ class Vehicle extends Model
         'date_of_last_v5c_issued',
     ];
 
-    public function make()
+    protected $casts = [
+        'last_dvla_sync_at' => 'datetime',
+    ];
+
+    public function make(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(VehicleMake::class, 'vehicle_make_id');
     }
 
-    public function model()
+    public function model(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(VehicleModel::class, 'vehicle_model_id');
     }

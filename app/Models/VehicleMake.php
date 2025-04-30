@@ -11,8 +11,13 @@ class VehicleMake extends Model
 
     protected $fillable = ['name'];
 
-    public function models()
+    public function models(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(VehicleModel::class);
+    }
+
+    public function vehicles(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Vehicle::class);
     }
 } 

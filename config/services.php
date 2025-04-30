@@ -43,6 +43,7 @@ return [
 
     'dvla' => [
         'api_key' => env('DVLA_API_KEY'),
+        'endpoint' => env('DVLA_API_ENDPOINT', 'https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles'),
     ],
 
 ];

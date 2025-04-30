@@ -9,7 +9,8 @@
                     <div class="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
                         <h3 class="text-lg font-semibold mb-4">Find Vehicle Data</h3>
                         
-                        <form class="space-y-4" action="{{ route('vehicle-details', ['registration' => 'placeholder']) }}" method="GET" onsubmit="event.preventDefault(); const reg = this.registration.value.trim(); if(reg) window.location.href = '{{ url('vehicle') }}/' + reg;">
+                        <form method="POST" action="{{ route('vehicle-data.lookup') }}" class="space-y-4">
+                            @csrf
                             <flux:field>
                                 <flux:label for="registration">Registration Number</flux:label>
                                 <flux:input 
@@ -19,7 +20,11 @@
                                     placeholder="e.g. AB12CDE"
                                     class="uppercase"
                                     oninput="this.value = this.value.toUpperCase()"
+                                    required
                                 />
+                                @error('registration')
+                                    <flux:text class="text-sm text-red-500 mt-1">{{ $message }}</flux:text>
+                                @enderror
                             </flux:field>
                             
                             <div class="text-center">
@@ -74,37 +79,19 @@
                         <h3 class="text-lg font-semibold mb-4">Recent Searches</h3>
                         
                         <div class="space-y-3">
+                            @foreach(\App\Models\Vehicle::latest()->take(3)->get() as $vehicle)
                             <flux:card class="p-3">
                                 <div class="flex justify-between items-center">
                                     <div>
-                                        <flux:heading size="sm">Land Rover Defender 90 (2020)</flux:heading>
-                                        <flux:text class="text-sm text-neutral-500">2.0L P300, 300hp</flux:text>
+                                        <flux:heading size="sm">{{ $vehicle->make }} {{ $vehicle->model }} ({{ $vehicle->year_of_manufacture }})</flux:heading>
+                                        <flux:text class="text-sm text-neutral-500">{{ $vehicle->engine_capacity }}, {{ $vehicle->fuel_type }}</flux:text>
                                     </div>
-                                    <a href="{{ url('vehicle/MS02 MUD') }}">
+                                    <a href="{{ route('vehicle-details', $vehicle->registration) }}">
                                         <flux:button variant="primary" size="sm">View</flux:button>
                                     </a>
                                 </div>
                             </flux:card>
-                            
-                            <flux:card class="p-3">
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <flux:heading size="sm">Ford Focus (2020)</flux:heading>
-                                        <flux:text class="text-sm text-neutral-500">1.5L EcoBoost, 150hp</flux:text>
-                                    </div>
-                                    <flux:button variant="primary" size="sm">View</flux:button>
-                                </div>
-                            </flux:card>
-                            
-                            <flux:card class="p-3">
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <flux:heading size="sm">Audi A4 (2021)</flux:heading>
-                                        <flux:text class="text-sm text-neutral-500">2.0L TFSI, 204hp</flux:text>
-                                    </div>
-                                    <flux:button variant="primary" size="sm">View</flux:button>
-                                </div>
-                            </flux:card>
+                            @endforeach
                         </div>
                     </div>
                 </div>
