@@ -160,17 +160,15 @@ class HaynesPro
                 'filter_toVehicleLevel' => 'MODEL'
             ], 'get');
 
-            return $response;
-
             // Extract models from the subElements array
             $models = [];   
             if (isset($response['subElements']) && is_array($response['subElements'])) {
                 foreach ($response['subElements'] as $element) {
-                    if (isset($element['fullName'])) {
-                        $models[] = $element['fullName'];
+                    if (isset($element['name']) && isset($element['id'])) {
+                        $models[$element['id']] = $element['name'];
                     }
                 }
-                }
+            }
             return $models;
         } catch (Exception $e) {
             Log::error('Failed to get vehicle models', [

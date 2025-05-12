@@ -33,15 +33,11 @@
                             
                             <flux:field>
                                 <flux:label for="make">Make</flux:label>
-                                <flux:select id="make" name="make">
+                                <flux:select id="make" name="make" onchange="showMakeId(this.value)">
                                     <option value="">Select Make</option>
-                                    <option value="audi">Audi</option>
-                                    <option value="bmw">BMW</option>
-                                    <option value="ford">Ford</option>
-                                    <option value="land-rover">Land Rover</option>
-                                    <option value="mercedes">Mercedes</option>
-                                    <option value="toyota">Toyota</option>
-                                    <option value="volkswagen">Volkswagen</option>
+                                    @foreach($makes as $make_id => $make_name)
+                                        <option value="{{ $make_id }}">{{ $make_name }}</option>
+                                    @endforeach
                                 </flux:select>
                             </flux:field>
                             
@@ -141,4 +137,53 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        function showMakeId(makeId) {
+            if (makeId) {
+                // Get the model select element
+                const modelSelect = document.getElementById('model');
+                
+                // Clear and disable the model select
+                modelSelect.innerHTML = '<option value="">Select Model</option>';
+                modelSelect.disabled = true;
+                
+                // Show loading state
+                modelSelect.innerHTML = '<option value="">Loading models...</option>';
+                
+                // Fetch models for the selected make
+                fetch(`/vehicle-data/models/${makeId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error('Error loading models:', data.error);
+                            modelSelect.innerHTML = '<option value="">Error loading models</option>';
+                            return;
+                        }
+                        
+                        // Enable the model select
+                        modelSelect.disabled = false;
+                        
+                        // Clear loading state
+                        modelSelect.innerHTML = '<option value="">Select Model</option>';
+                        
+                        // Add the models to the select, sorted alphabetically by name
+                        Object.entries(data.models)
+                            .sort((a, b) => a[1].localeCompare(b[1]))
+                            .forEach(([id, name]) => {
+                                const option = document.createElement('option');
+                                option.value = id;
+                                option.textContent = name;
+                                modelSelect.appendChild(option);
+                            });
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        modelSelect.innerHTML = '<option value="">Error loading models</option>';
+                    });
+            }
+        }
+    </script>
+    @endpush
 </x-layouts.app> 

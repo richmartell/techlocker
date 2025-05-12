@@ -8,12 +8,24 @@ use App\Models\VehicleModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Services\HaynesPro;
 
 class VehicleLookupController extends Controller
 {
     public function index()
     {
-        return view('vehicle-data');
+        try {
+            $makes = app(HaynesPro::class)->getVehicleMakes();
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch vehicle makes', [
+                'error' => $e->getMessage()
+            ]);
+            $makes = [];
+        }
+
+        return view('vehicle-data', [
+            'makes' => $makes
+        ]);
     }
 
     public function lookup(Request $request)
