@@ -21,6 +21,7 @@
                                     class="uppercase"
                                     oninput="this.value = this.value.toUpperCase()"
                                     required
+                                    id="registrationInput"
                                 />
                                 @error('registration')
                                     <flux:text class="text-sm text-red-500 mt-1">{{ $message }}</flux:text>
@@ -49,21 +50,14 @@
                             </flux:field>
                             
                             <flux:field>
-                                <flux:label for="year">Year</flux:label>
-                                <flux:select id="year" name="year" disabled>
-                                    <option value="">Select Year</option>
-                                </flux:select>
-                            </flux:field>
-                            
-                            <flux:field>
-                                <flux:label for="engine">Engine</flux:label>
-                                <flux:select id="engine" name="engine" disabled>
-                                    <option value="">Select Engine</option>
+                                <flux:label for="type">Type</flux:label>
+                                <flux:select id="type" name="type" disabled>
+                                    <option value="">Select Type</option>
                                 </flux:select>
                             </flux:field>
                             
                             <div>
-                                <flux:button type="submit" variant="primary" class="w-full">
+                                <flux:button type="submit" variant="primary" class="w-full" id="submitButton" onclick="handleSubmit(event)">
                                     Search
                                 </flux:button>
                             </div>
@@ -140,14 +134,35 @@
 
     @push('scripts')
     <script>
+        function handleSubmit(event) {
+            const submitButton = document.getElementById('submitButton');
+            if (submitButton.textContent === 'View') {
+                event.preventDefault();
+                const typeSelect = document.getElementById('type');
+                window.location.href = `/vehicle-data/type/${typeSelect.value}`;
+            }
+        }
+
         function showMakeId(makeId) {
             if (makeId) {
                 // Get the model select element
                 const modelSelect = document.getElementById('model');
+                const typeSelect = document.getElementById('type');
+                const submitButton = document.getElementById('submitButton');
+                const form = document.querySelector('form');
+                const registrationInput = document.getElementById('registrationInput');
                 
-                // Clear and disable the model select
+                // Clear and disable the selects
                 modelSelect.innerHTML = '<option value="">Select Model</option>';
                 modelSelect.disabled = true;
+                typeSelect.innerHTML = '<option value="">Select Type</option>';
+                typeSelect.disabled = true;
+                
+                // Reset button text and form
+                submitButton.textContent = 'Search';
+                form.action = "{{ route('vehicle-data.lookup') }}";
+                form.method = 'POST';
+                registrationInput.required = true;
                 
                 // Show loading state
                 modelSelect.innerHTML = '<option value="">Loading models...</option>';
@@ -177,6 +192,63 @@
                                 option.textContent = name;
                                 modelSelect.appendChild(option);
                             });
+
+                        // Add event listener for model selection
+                        modelSelect.addEventListener('change', function() {
+                            if (this.value) {
+                                // Show model selection alert
+                                console.log(`Selected Model ID: ${this.value}\nModel Name: ${this.options[this.selectedIndex].text}`);
+                                
+                                // Load types for the selected make
+                                typeSelect.innerHTML = '<option value="">Loading types...</option>';
+                                typeSelect.disabled = true;
+                                
+                                fetch(`/vehicle-data/types/${this.value}`)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.error) {
+                                            console.error('Error loading types:', data.error);
+                                            typeSelect.innerHTML = '<option value="">Error loading types</option>';
+                                            return;
+                                        }
+                                        
+                                        // Enable the type select
+                                        typeSelect.disabled = false;
+                                        
+                                        // Clear loading state
+                                        typeSelect.innerHTML = '<option value="">Select Type</option>';
+                                        
+                                        // Add the types to the select from the subElements array, sorted alphabetically by name
+                                        if (data.types && data.types.subElements && Array.isArray(data.types.subElements)) {
+                                            data.types.subElements
+                                                .sort((a, b) => a.name.localeCompare(b.name))
+                                                .forEach(type => {
+                                                    const option = document.createElement('option');
+                                                    option.value = type.id;
+                                                    option.textContent = `${type.name} - (${type.madeFrom} - ${type.madeUntil})`;
+                                                    typeSelect.appendChild(option);
+                                                });
+                                        } else {
+                                            typeSelect.innerHTML = '<option value="">No types available</option>';
+                                        }
+                                            
+                                        // Add event listener for type selection
+                                        typeSelect.addEventListener('change', function() {
+                                            if (this.value) {
+                                                // Change button text
+                                                submitButton.textContent = 'View';
+                                            } else {
+                                                // Reset button text
+                                                submitButton.textContent = 'Search';
+                                            }
+                                        });
+                                    })
+                                    .catch(error => {
+                                        console.error('Error:', error);
+                                        typeSelect.innerHTML = '<option value="">Error loading types</option>';
+                                    });
+                            }
+                        });
                     })
                     .catch(error => {
                         console.error('Error:', error);

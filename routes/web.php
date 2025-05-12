@@ -61,15 +61,29 @@ Route::get('diagnostics/test-api', [DiagnosticsController::class, 'testApiConnec
     ->name('test-diagnostics-api');
 
 // Add route to fetch models for a make
-Route::get('vehicle-data/models/{makeId}', function ($makeId) {
+Route::get('/vehicle-data/models/{makeId}', function ($makeId) {
     try {
-        $models = app(HaynesPro::class)->getVehicleModels($makeId);
+        $haynesPro = app(HaynesPro::class);
+        $models = $haynesPro->getVehicleModels($makeId);
         return response()->json(['models' => $models]);
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);
     }
-})->middleware(['auth', 'verified'])
-  ->name('vehicle-data.models');
+})->middleware(['auth', 'verified'])->name('vehicle-data.models');
+
+Route::get('/vehicle-data/types/{makeId}', function ($makeId) {
+    try {
+        $haynesPro = app(HaynesPro::class);
+        $types = $haynesPro->getVehicleTypes($makeId);
+        return response()->json(['types' => $types]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+})->middleware(['auth', 'verified'])->name('vehicle-data.types');
+
+Route::get('/vehicle-data/type/{typeId}', function ($typeId) {
+    return view('vehicle-type', ['typeId' => $typeId]);
+})->middleware(['auth', 'verified'])->name('vehicle-type');
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');

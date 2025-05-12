@@ -178,12 +178,12 @@ class HaynesPro
         }
     }
 
-    public function getVehicleTypes($make_id)
+    public function getVehicleTypes($model_id)
     {
         try {
             $response = $this->request('getIdentificationTreeV2', [
                 'descriptionLanguage' => 'en',
-                'vehicle_id' => $make_id,  
+                'vehicle_id' => $model_id,  
                 'vehicle_level' => 'MODEL', 
                 'filter_dataset' => 'WORKSHOP', 
                 'filter_toVehicleLevel' => 'TYPE'
