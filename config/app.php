@@ -139,6 +139,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\DVLAServiceProvider::class,
+        App\Providers\HaynesProServiceProvider::class,
     ])->toArray(),
 
 ];

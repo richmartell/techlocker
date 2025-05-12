@@ -46,4 +46,9 @@ return [
         'endpoint' => env('DVLA_API_ENDPOINT', 'https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles'),
     ],
 
+    'haynespro' => [
+        'distributor_username' => env('HAYNESPRO_DISTRIBUTOR_USERNAME'),
+        'distributor_password' => env('HAYNESPRO_DISTRIBUTOR_PASSWORD'),
+    ],
+
 ];
