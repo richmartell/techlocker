@@ -101,6 +101,30 @@ Route::get('/vehicle-data/type/{typeId}', function ($typeId) {
     }
 })->middleware(['auth', 'verified'])->name('vehicle-type');
 
+Route::get('/vehicle-data/adjustments/{carType}/{carTypeGroup}', function ($carType, $carTypeGroup) {
+    try {
+        $haynesPro = app(HaynesPro::class);
+        $adjustments = $haynesPro->getAdjustments($carType, $carTypeGroup);
+        
+        if (empty($adjustments)) {
+            return back()->with('error', 'No adjustments found for the selected type and group.');
+        }
+        
+        return view('vehicle-adjustments', [
+            'adjustments' => $adjustments,
+            'carType' => $carType,
+            'carTypeGroup' => $carTypeGroup
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Failed to load vehicle adjustments', [
+            'carType' => $carType,
+            'carTypeGroup' => $carTypeGroup,
+            'error' => $e->getMessage()
+        ]);
+        return back()->with('error', 'Failed to load vehicle adjustments: ' . $e->getMessage());
+    }
+})->middleware(['auth', 'verified'])->name('vehicle-adjustments');
+
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 

@@ -234,33 +234,13 @@ class HaynesPro
         }
     }
 
-    public function getLubricants()
-    {
-        try {
-            $response = $this->request('getLubricantsV5', [
-                'descriptionLanguage' => 'en',
-                'carType' => 301000862, // Need to change to work
-                'carTypeGroup' => 'QUICKGUIDES',
-                'axleComponents' => 305005545, // Need to change
-                'countryCodes' => 'GB'
-            ], 'get');
-
-            return $response;
-        } catch (Exception $e) {
-            Log::error('Failed to get drawings', [
-                'error' => $e->getMessage()
-            ]);
-            throw $e;
-        }
-    }
-
-    public function getAdjustments()
+    public function getAdjustments( $carType, $carTypeGroup )
     {
         try {
             $response = $this->request('getAdjustmentsV7', [
                 'descriptionLanguage' => 'en',
-                'carType' => 7970,
-                'carTypeGroup' => 'ENGINE',
+                'carType' => $carType,
+                'carTypeGroup' => $carTypeGroup,
                 'includeSmartLinks' => true,
                 'includeGenarts' => true
             ], 'get');
