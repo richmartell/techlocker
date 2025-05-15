@@ -125,6 +125,36 @@ Route::get('/vehicle-data/adjustments/{carType}/{carTypeGroup}', function ($carT
     }
 })->middleware(['auth', 'verified'])->name('vehicle-adjustments');
 
+Route::get('/vehicle-data/lubricants/{carType}/{carTypeGroup}', function ($carType, $carTypeGroup) {
+    try {
+        $haynesPro = app(HaynesPro::class);
+        $lubricants = $haynesPro->getLubricants($carType, $carTypeGroup);
+        
+        if (empty($lubricants)) {
+            return 'No lubricant information found for this vehicle.';
+        }
+        
+        return view('vehicle-lubricants', [
+            'lubricants' => $lubricants,
+            'carType' => $carType,
+            'carTypeGroup' => $carTypeGroup
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Failed to load vehicle lubricants', [
+            'carType' => $carType,
+            'carTypeGroup' => $carTypeGroup,
+            'error' => $e->getMessage()
+        ]);
+        // Instead of redirecting back, show a view with an error message
+        return view('vehicle-lubricants', [
+            'error' => 'Failed to load vehicle lubricants: ' . $e->getMessage(),
+            'carType' => $carType,
+            'carTypeGroup' => $carTypeGroup,
+            'lubricants' => []
+        ]);
+    }
+})->middleware(['auth', 'verified'])->name('vehicle-lubricants');
+
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 

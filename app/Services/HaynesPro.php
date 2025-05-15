@@ -253,6 +253,26 @@ class HaynesPro
             throw $e;
         }
     }
+
+    public function getLubricants( $carType, $carTypeGroup )
+    {
+        try {
+            $response = $this->request('getLubricantsV5', [
+                'descriptionLanguage' => 'en',
+                'carType' => $carType,
+                'carTypeGroup' => $carTypeGroup,
+                'includeSmartLinks' => true,
+                'includeGenarts' => true
+            ], 'get');
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('Failed to get drawings', [
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
     
 
 } 
