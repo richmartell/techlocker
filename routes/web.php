@@ -6,6 +6,7 @@ use App\Http\Controllers\DiagnosticsController;
 use App\Http\Controllers\ApiSettingsController;
 use App\Http\Controllers\VehicleLookupController;
 use App\Services\HaynesPro;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -82,7 +83,22 @@ Route::get('/vehicle-data/types/{makeId}', function ($makeId) {
 })->middleware(['auth', 'verified'])->name('vehicle-data.types');
 
 Route::get('/vehicle-data/type/{typeId}', function ($typeId) {
-    return view('vehicle-type', ['typeId' => $typeId]);
+    try {
+        $haynesPro = app(HaynesPro::class);
+        $details = $haynesPro->getVehicleDetails($typeId);
+        
+        if (empty($details)) {
+            return back()->with('error', 'No vehicle details found for the selected type.');
+        }
+        
+        return view('vehicle-type', ['details' => $details]);
+    } catch (\Exception $e) {
+        Log::error('Failed to load vehicle details', [
+            'typeId' => $typeId,
+            'error' => $e->getMessage()
+        ]);
+        return back()->with('error', 'Failed to load vehicle details: ' . $e->getMessage());
+    }
 })->middleware(['auth', 'verified'])->name('vehicle-type');
 
 Route::middleware(['auth'])->group(function () {
