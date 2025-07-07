@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GarageIQ - Vehicle Workshop Management Platform</title>
+    <title>TechLocker - Vehicle Workshop Management Platform</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -50,7 +50,7 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 flex items-center">
-                        <span class="text-2xl font-bold text-primary-600">GarageIQ</span>
+                        <span class="text-2xl font-bold text-primary-600">TechLocker</span>
                     </div>
                 </div>
                 <div class="flex items-center">
@@ -76,7 +76,7 @@
                             <span class="block text-primary-600 xl:inline">Workshop Management</span>
                         </h1>
                         <p class="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                            GarageIQ is the all-in-one platform for vehicle workshops. Manage customers, vehicles, invoices, and service sheets with ease.
+                            TechLocker is the all-in-one platform for vehicle workshops. Manage customers, vehicles, inspection data, and service sheets with ease.
                         </p>
                         <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                             <div class="rounded-md shadow">
@@ -108,7 +108,7 @@
                     Everything you need to manage your workshop
                 </p>
                 <p class="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
-                    GarageIQ provides a comprehensive set of tools designed specifically for vehicle workshops.
+                    TechLocker provides a comprehensive set of tools designed specifically for vehicle workshops.
                 </p>
             </div>
 
@@ -217,7 +217,7 @@
                 </div>
             </nav>
             <p class="mt-8 text-center text-base text-gray-400">
-                &copy; 2023 GarageIQ. All rights reserved.
+                &copy; {{ date('Y') }} TechLocker. All rights reserved.
             </p>
         </div>
     </footer>

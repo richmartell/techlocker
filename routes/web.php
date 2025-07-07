@@ -125,6 +125,10 @@ Route::get('/vehicle-data/adjustments/{carType}/{carTypeGroup}', function ($carT
     }
 })->middleware(['auth', 'verified'])->name('vehicle-adjustments');
 
+Route::get('/vehicle-information/{carType}/{carTypeGroup}/{subject}', function($carType, $carTypeGroup, $subject){
+    return 1;
+})->middleware(['auth', 'verified'])->name('vehicle-information');
+
 Route::get('/vehicle-data/lubricants/{carType}/{carTypeGroup}', function ($carType, $carTypeGroup) {
     try {
         $haynesPro = app(HaynesPro::class);

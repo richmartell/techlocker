@@ -62,35 +62,26 @@
                 <!-- Subject Cards -->
                 <div>
                     <h3 class="text-lg font-semibold mb-4">Available Information</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        @foreach($details['subjectsByGroup']['mapItems'] as $group)
-                            <flux:card class="p-4">
-                                <flux:heading size="sm" class="mb-3">{{ $group['key'] }}</flux:heading>
-                                <ul class="space-y-2">
-                                    @foreach(explode(',', $group['value']) as $subject)
-                                        <li class="flex items-center text-sm">
-                                            @if(strtolower($subject) === 'lubricants')
-                                                <a href="{{ route('vehicle-lubricants', ['carType' => $details['id'], 'carTypeGroup' => str_replace('_ADJUSTMENTS', '', $group['key'])]) }}" 
-                                                   class="flex items-center text-sm hover:text-primary-600 transition-colors duration-200">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-primary-600" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                                    </svg>
-                                                    {{ str_replace('_', ' ', $subject) }}
-                                                </a>
-                                            @else
-                                                <a href="{{ route('vehicle-adjustments', ['carType' => $details['id'], 'carTypeGroup' => str_replace('_ADJUSTMENTS', '', $group['key'])]) }}" 
-                                                   class="flex items-center text-sm hover:text-primary-600 transition-colors duration-200">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-primary-600" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                                    </svg>
-                                                    {{ str_replace('_', ' ', $subject) }}
-                                                </a>
-                                            @endif
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </flux:card>
-                        @endforeach
+                    <div class="space-y-4">
+                        <flux:accordion>
+                            @foreach($details['subjectsByGroup']['mapItems'] as $group)
+                                <flux:accordion.item>
+                                    <flux:accordion.heading>{{ $group['key'] }}</flux:accordion.heading>
+                                    <flux:accordion.content>
+                                        @foreach(explode(',', $group['value']) as $subject)
+                                            <a href="{{ route('vehicle-information', ['carType' => $details['id'], 'carTypeGroup' => $group['key'], 'subject' => $subject]) }}" 
+                                            class="flex items-center text-sm hover:text-primary-600 transition-colors duration-200">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-primary-600" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                </svg>
+                                                {{ str_replace('_', ' ', $subject) }}
+                                            </a>
+                                        @endforeach
+                                    </flux:accordion.content>
+                                </flux:accordion.item>
+                                
+                            @endforeach
+                        </flux:accordion>
                     </div>
                 </div>
             </div>

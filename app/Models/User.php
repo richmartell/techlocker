@@ -29,6 +29,7 @@ class User extends Authenticatable
         'role',
         'is_admin',
         'is_active',
+        'tour_completed_at',
     ];
 
     /**
@@ -51,6 +52,7 @@ class User extends Authenticatable
         'password' => 'hashed',
         'is_admin' => 'boolean',
         'is_active' => 'boolean',
+        'tour_completed_at' => 'datetime',
     ];
 
     /**
@@ -70,5 +72,21 @@ class User extends Authenticatable
             ->explode(' ')
             ->map(fn (string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
+    }
+
+    /**
+     * Check if the user has completed the welcome tour
+     */
+    public function hasCompletedTour(): bool
+    {
+        return !is_null($this->tour_completed_at);
+    }
+
+    /**
+     * Mark the tour as completed
+     */
+    public function completeTour(): void
+    {
+        $this->update(['tour_completed_at' => now()]);
     }
 }
