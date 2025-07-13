@@ -49,6 +49,8 @@ return [
     'haynespro' => [
         'distributor_username' => env('HAYNESPRO_DISTRIBUTOR_USERNAME'),
         'distributor_password' => env('HAYNESPRO_DISTRIBUTOR_PASSWORD'),
+        'vrm_username' => env('HAYNESPRO_VRM_USERNAME'),
+        'vrm_token' => env('HAYNESPRO_VRM_TOKEN'),
     ],
 
 ];

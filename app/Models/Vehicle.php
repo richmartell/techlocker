@@ -31,25 +31,37 @@ class Vehicle extends Model
         'euro_status',
         'real_driving_emissions',
         'date_of_last_v5c_issued',
+        'transmission',
+        'forward_gears',
+        'combined_vin',
+        'haynes_model_variant_description',
+        'last_haynespro_sync_at',
+        'dvla_date_of_manufacture',
+        'dvla_last_mileage',
+        'dvla_last_mileage_date',
+        'haynes_maximum_power_at_rpm',
+        'tecdoc_ktype',
     ];
 
     protected $dates = [
         'last_dvla_sync_at',
         'tax_due_date',
         'date_of_last_v5c_issued',
+        'last_haynespro_sync_at',
     ];
 
     protected $casts = [
         'last_dvla_sync_at' => 'datetime',
+        'last_haynespro_sync_at' => 'datetime',
     ];
 
     public function make(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(VehicleMake::class, 'vehicle_make_id');
+        return $this->belongsTo(\App\Models\VehicleMake::class, 'vehicle_make_id');
     }
 
     public function model(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(VehicleModel::class, 'vehicle_model_id');
+        return $this->belongsTo(\App\Models\VehicleModel::class, 'vehicle_model_id');
     }
 } 

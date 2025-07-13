@@ -73,8 +73,27 @@
                             <flux:card class="p-3">
                                 <div class="flex justify-between items-center">
                                     <div>
-                                        <flux:heading size="sm">{{ $vehicle->make }} {{ $vehicle->model }} ({{ $vehicle->year_of_manufacture }})</flux:heading>
-                                        <flux:text class="text-sm text-neutral-500">{{ $vehicle->engine_capacity }}, {{ $vehicle->fuel_type }}</flux:text>
+                                        <flux:heading size="sm">
+                                            @if($vehicle->make && $vehicle->model)
+                                                {{ $vehicle->make->name }} {{ $vehicle->model->name }}
+                                            @else
+                                                Unknown Vehicle
+                                            @endif
+                                            @if($vehicle->registration)
+                                                ({{ $vehicle->registration }})
+                                            @endif
+                                        </flux:heading>
+                                        <flux:text class="text-sm text-neutral-500">
+                                            @if($vehicle->year_of_manufacture)
+                                                {{ $vehicle->year_of_manufacture }}
+                                            @endif
+                                            @if($vehicle->engine_capacity || $vehicle->fuel_type)
+                                                @if($vehicle->year_of_manufacture) • @endif
+                                                @if($vehicle->engine_capacity){{ $vehicle->engine_capacity }}@endif
+                                                @if($vehicle->engine_capacity && $vehicle->fuel_type), @endif
+                                                @if($vehicle->fuel_type){{ $vehicle->fuel_type }}@endif
+                                            @endif
+                                        </flux:text>
                                     </div>
                                     <a href="{{ route('vehicle-details', $vehicle->registration) }}">
                                         <flux:button variant="primary" size="sm">View</flux:button>
