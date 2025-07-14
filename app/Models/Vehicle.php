@@ -41,6 +41,9 @@ class Vehicle extends Model
         'dvla_last_mileage_date',
         'haynes_maximum_power_at_rpm',
         'tecdoc_ktype',
+        'car_type_id',
+        'available_subjects',
+        'car_type_identified_at',
     ];
 
     protected $dates = [
@@ -53,6 +56,7 @@ class Vehicle extends Model
     protected $casts = [
         'last_dvla_sync_at' => 'datetime',
         'last_haynespro_sync_at' => 'datetime',
+        'car_type_identified_at' => 'datetime',
     ];
 
     public function make(): \Illuminate\Database\Eloquent\Relations\BelongsTo
@@ -63,5 +67,41 @@ class Vehicle extends Model
     public function model(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(\App\Models\VehicleModel::class, 'vehicle_model_id');
+    }
+
+    /**
+     * Get the available subjects as an array
+     */
+    public function getAvailableSubjectsArrayAttribute()
+    {
+        if (empty($this->available_subjects)) {
+            return [];
+        }
+        return array_filter(explode(',', $this->available_subjects));
+    }
+
+    /**
+     * Set the available subjects from an array
+     */
+    public function setAvailableSubjectsFromArray(array $subjects)
+    {
+        $this->available_subjects = implode(',', array_filter($subjects));
+    }
+
+    /**
+     * Check if the vehicle has a valid car type identification
+     */
+    public function hasCarTypeIdentification(): bool
+    {
+        return !empty($this->car_type_id) && !empty($this->car_type_identified_at);
+    }
+
+    /**
+     * Check if the car type identification is recent (within 24 hours)
+     */
+    public function hasRecentCarTypeIdentification(): bool
+    {
+        return $this->hasCarTypeIdentification() && 
+               $this->car_type_identified_at->diffInHours(now()) < 24;
     }
 } 

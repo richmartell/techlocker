@@ -7,6 +7,8 @@ use App\Http\Controllers\ApiSettingsController;
 use App\Http\Controllers\VehicleLookupController;
 use App\Services\HaynesPro;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\TechnicalInformationController;
+use App\Http\Controllers\HaynesInspectorController;
 
 /*
 |--------------------------------------------------------------------------
@@ -159,7 +161,7 @@ Route::get('/vehicle-data/lubricants/{carType}/{carTypeGroup}', function ($carTy
     }
 })->middleware(['auth', 'verified'])->name('vehicle-lubricants');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
@@ -169,6 +171,25 @@ Route::middleware(['auth'])->group(function () {
     // API Settings Routes
     Route::get('settings/api', [ApiSettingsController::class, 'show'])->name('settings.api');
     Route::post('settings/api', [ApiSettingsController::class, 'save'])->name('settings.api.save');
+    
+    // Technical Information Routes
+    Route::prefix('vehicle/{registration}/technical')->group(function () {
+        Route::get('/', [TechnicalInformationController::class, 'index'])->name('technical-information.index');
+        Route::get('/maintenance-systems', [TechnicalInformationController::class, 'maintenanceSystems'])->name('technical-information.maintenance-systems');
+        Route::get('/maintenance-tasks', [TechnicalInformationController::class, 'maintenanceTasks'])->name('technical-information.maintenance-tasks');
+        Route::get('/adjustments/{systemGroup}', [TechnicalInformationController::class, 'adjustments'])->name('technical-information.adjustments');
+        Route::get('/lubricants/{systemGroup}', [TechnicalInformationController::class, 'lubricants'])->name('technical-information.lubricants');
+        Route::get('/technical-drawings/{systemGroup}', [TechnicalInformationController::class, 'technicalDrawings'])->name('technical-information.technical-drawings');
+        Route::get('/wiring-diagrams', [TechnicalInformationController::class, 'wiringDiagrams'])->name('technical-information.wiring-diagrams');
+        Route::get('/fuse-locations', [TechnicalInformationController::class, 'fuseLocations'])->name('technical-information.fuse-locations');
+        Route::get('/repair-times/{systemGroup?}', [TechnicalInformationController::class, 'repairTimes'])->name('technical-information.repair-times');
+    });
+    
+    // Haynes Inspector Routes
+    Route::prefix('vehicle/{registration}/haynes-inspector')->group(function () {
+        Route::get('/', [HaynesInspectorController::class, 'index'])->name('haynes-inspector.index');
+        Route::post('/execute/{method}', [HaynesInspectorController::class, 'executeMethod'])->name('haynes-inspector.execute');
+    });
 });
 
 require __DIR__.'/auth.php';

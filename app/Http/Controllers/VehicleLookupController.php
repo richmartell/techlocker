@@ -42,191 +42,99 @@ class VehicleLookupController extends Controller
             // Check if we already have this vehicle in our database
             $vehicle = Vehicle::where('registration', $registration)->first();
 
-            // If we have the vehicle and it was synced recently (within last 24 hours), return it
-            if ($vehicle && $vehicle->last_haynespro_sync_at && $vehicle->last_haynespro_sync_at->diffInHours(now()) < 24) {
-                Log::info('Found cached vehicle', ['vehicle' => $vehicle->toArray()]);
+            // If we have the vehicle with recent car type identification, return it
+            if ($vehicle && $vehicle->hasRecentCarTypeIdentification()) {
+                Log::info('Found cached vehicle with recent identification', ['vehicle' => $vehicle->toArray()]);
                 return redirect()->route('vehicle-details', $vehicle->registration);
             }
 
-            // Otherwise, fetch from HaynesPro VRM API
+            // Otherwise, perform complete vehicle identification using HaynesPro APIs
             try {
-                Log::info('Vehicle Lookup: Fetching from HaynesPro VRM API', [
-                    'registration' => $registration,
-                    'haynespro_endpoint' => config('services.haynespro.vrm_token') ? 'configured' : 'not configured'
-                ]);
-                
-                $haynesPro = app(HaynesPro::class);
-                $response = $haynesPro->getVehicleDetailsByVrm($registration);
-
-                Log::info('Vehicle Lookup: HaynesPro VRM API response received', [
-                    'registration' => $registration,
-                    'response_keys' => array_keys($response ?? []),
-                    'vehicle_info' => $response['VehicleInfo'] ?? null
+                Log::info('Vehicle Lookup: Starting complete vehicle identification', [
+                    'registration' => $registration
                 ]);
 
-                if (!empty($response['VehicleInfo'])) {
-                    $data = $response['VehicleInfo'];
+                $haynesProService = app(HaynesPro::class);
+                $identificationData = $haynesProService->identifyVehicleComplete($registration);
 
-                    Log::info('Vehicle Lookup: Processing HaynesPro VRM response data', [
-                        'registration' => $registration,
-                        'available_fields' => array_keys($data ?? []),
-                        'make_field' => isset($data['CombinedMake']) ? $data['CombinedMake'] : 'MISSING',
-                        'model_field' => isset($data['CombinedModel']) ? $data['CombinedModel'] : 'MISSING', 
-                        'fuel_type_field' => isset($data['CombinedFuelType']) ? $data['CombinedFuelType'] : 'MISSING',
-                        'engine_capacity_field' => isset($data['CombinedEngineCapacity']) ? $data['CombinedEngineCapacity'] : 'MISSING'
+                if (empty($identificationData['vehicle_data'])) {
+                    Log::warning('Vehicle Lookup: No vehicle information found', [
+                        'registration' => $registration
                     ]);
-
-                    // Handle make and model relationships
-                    $vehicleMakeId = null;
-                    $vehicleModelId = null;
-
-                    if (!empty($data['CombinedMake'])) {
-                        Log::info('Vehicle Lookup: Processing make data', [
-                            'registration' => $registration,
-                            'make_value' => $data['CombinedMake']
-                        ]);
-                        
-                        // Find or create the make
-                        $make = VehicleMake::firstOrCreate(
-                            ['name' => $data['CombinedMake']]
-                        );
-                        $vehicleMakeId = $make->id;
-                        
-                        Log::info('Vehicle Lookup: Make processed', [
-                            'registration' => $registration,
-                            'make_id' => $vehicleMakeId,
-                            'make_name' => $make->name,
-                            'was_created' => $make->wasRecentlyCreated
-                        ]);
-                    } else {
-                        Log::warning('Vehicle Lookup: No make field in HaynesPro VRM response', [
-                            'registration' => $registration,
-                            'response_keys' => array_keys($data ?? [])
-                        ]);
-                    }
-
-                    if (!empty($data['CombinedModel'])) {
-                        Log::info('Vehicle Lookup: Processing model data', [
-                            'registration' => $registration,
-                            'model_value' => $data['CombinedModel'],
-                            'make_id' => $vehicleMakeId
-                        ]);
-                        
-                        // Find or create the model
-                        $model = VehicleModel::firstOrCreate([
-                            'name' => $data['CombinedModel'],
-                            'vehicle_make_id' => $vehicleMakeId
-                        ]);
-                        $vehicleModelId = $model->id;
-                        
-                        Log::info('Vehicle Lookup: Model processed', [
-                            'registration' => $registration,
-                            'model_id' => $vehicleModelId,
-                            'model_name' => $model->name,
-                            'was_created' => $model->wasRecentlyCreated
-                        ]);
-                    } else {
-                        Log::warning('Vehicle Lookup: No model field in HaynesPro VRM response', [
-                            'registration' => $registration,
-                            'response_keys' => array_keys($data ?? [])
-                        ]);
-                    }
-
-                    // Try to get TecdocKtype from VRM API response
-                    $tecdocKtype = $data['TecdocKType'] ?? $data['TecdocID'] ?? $data['TecdocKtype'] ?? $data['TecDocKType'] ?? $data['TecDocID'] ?? $data['TecdocNType'] ?? null;
-                    
-                    // If TecdocKtype is not available from VRM API but we have a VIN, try to get it from the identification API
-                    if (!$tecdocKtype && !empty($data['CombinedVin'])) {
-                        try {
-                            Log::info('Vehicle Lookup: Attempting to get TecdocKtype using VIN', [
-                                'registration' => $registration,
-                                'vin' => $data['CombinedVin']
-                            ]);
-                            
-                            $identificationResponse = $haynesPro->getIdentificationByVin($data['CombinedVin']);
-                            
-                            if (!empty($identificationResponse) && is_array($identificationResponse)) {
-                                // The response should contain vehicle identification data
-                                foreach ($identificationResponse as $identificationData) {
-                                    if (isset($identificationData['id'])) {
-                                        $tecdocKtype = $identificationData['id'];
-                                        Log::info('Vehicle Lookup: Found TecdocKtype from VIN lookup', [
-                                            'registration' => $registration,
-                                            'vin' => $data['CombinedVin'],
-                                            'tecdoc_ktype' => $tecdocKtype
-                                        ]);
-                                        break; // Use the first match
-                                    }
-                                }
-                            }
-                        } catch (\Exception $e) {
-                            Log::warning('Vehicle Lookup: Could not get TecdocKtype from VIN', [
-                                'registration' => $registration,
-                                'vin' => $data['CombinedVin'],
-                                'error' => $e->getMessage()
-                            ]);
-                        }
-                    }
-
-                    // Prepare vehicle data for database
-                    $vehicleData = [
-                        'vehicle_make_id' => $vehicleMakeId,
-                        'vehicle_model_id' => $vehicleModelId,
-                        'engine_capacity' => $data['CombinedEngineCapacity'] ?? null,
-                        'fuel_type' => $data['CombinedFuelType'] ?? null,
-                        'transmission' => $data['CombinedTransmission'] ?? null,
-                        'forward_gears' => $data['CombinedForwardGears'] ?? null,
-                        'combined_vin' => $data['CombinedVin'] ?? null,
-                        'haynes_model_variant_description' => $data['HaynesModelVariantDescription'] ?? null,
-                        'dvla_date_of_manufacture' => $data['DvlaDateofManufacture'] ?? null,
-                        'dvla_last_mileage' => $data['DvlaLastMileage'] ?? null,
-                        'dvla_last_mileage_date' => $data['DvlaLastMileageDate'] ?? null,
-                        'haynes_maximum_power_at_rpm' => $data['HaynesMaximumPowerAtRpm'] ?? null,
-                        'tecdoc_ktype' => $tecdocKtype,
-                        'last_haynespro_sync_at' => now(),
-                    ];
-
-                    Log::info('Vehicle Lookup: Creating/updating vehicle in database', [
-                        'registration' => $registration,
-                        'vehicle_data' => $vehicleData,
-                        'haynespro_response_fields' => array_keys($data ?? [])
-                    ]);
-                    
-                    // Create or update the vehicle
-                    $vehicle = Vehicle::updateOrCreate(
-                        ['registration' => $registration],
-                        $vehicleData
-                    );
-
-                    Log::info('Vehicle Lookup: Vehicle successfully created/updated', [
-                        'registration' => $registration,
-                        'vehicle_id' => $vehicle->id,
-                        'was_recently_created' => $vehicle->wasRecentlyCreated,
-                        'final_vehicle_data' => $vehicle->toArray()
-                    ]);
-                    
-                    return redirect()->route('vehicle-details', $vehicle->registration);
+                    return back()->with('error', 'No vehicle found with registration ' . $registration);
                 }
 
-                Log::warning('Vehicle Lookup: Vehicle not found in HaynesPro VRM database', [
+                $vehicleInfo = $identificationData['vehicle_data'];
+                $carTypeId = $identificationData['car_type_id'];
+                $availableSubjects = $identificationData['available_subjects'];
+
+                Log::info('Vehicle Lookup: Successfully identified vehicle', [
                     'registration' => $registration,
-                    'response_keys' => array_keys($response ?? [])
+                    'car_type_id' => $carTypeId,
+                    'subjects_count' => count($availableSubjects),
+                    'identification_method' => $identificationData['identification_method']
                 ]);
-                return back()->withErrors(['registration' => 'Vehicle not found in HaynesPro VRM database. Please check the registration number.']);
-            } catch (\Exception $e) {
-                Log::error('Vehicle Lookup: HaynesPro VRM API error', [
+
+                // Create or update the vehicle record
+                if (!$vehicle) {
+                    $vehicle = new Vehicle();
+                    $vehicle->registration = $registration;
+                }
+
+                // Map VRM API data to vehicle model
+                $vehicle->engine_capacity = !empty($vehicleInfo['CombinedEngineCapacity']) ? intval($vehicleInfo['CombinedEngineCapacity']) : null;
+                $vehicle->fuel_type = $vehicleInfo['CombinedFuelType'] ?? null;
+                $vehicle->transmission = $vehicleInfo['CombinedTransmission'] ?? null;
+                $vehicle->forward_gears = !empty($vehicleInfo['CombinedForwardGears']) ? intval($vehicleInfo['CombinedForwardGears']) : null;
+                $vehicle->combined_vin = $vehicleInfo['CombinedVin'] ?? null;
+                $vehicle->haynes_model_variant_description = $vehicleInfo['HaynesModelVariantDescription'] ?? null;
+                $vehicle->dvla_date_of_manufacture = $vehicleInfo['DvlaDateofManufacture'] ?? null;
+                $vehicle->dvla_last_mileage = !empty($vehicleInfo['DvlaLastMileage']) ? intval($vehicleInfo['DvlaLastMileage']) : null;
+                $vehicle->dvla_last_mileage_date = $vehicleInfo['DvlaLastMileageDate'] ?? null;
+                $vehicle->haynes_maximum_power_at_rpm = $vehicleInfo['HaynesMaximumPowerAtRpm'] ?? null;
+                $vehicle->tecdoc_ktype = $vehicleInfo['TecdocKType'] ?? $vehicleInfo['TecDocKType'] ?? null;
+                
+                // Set new car type identification fields
+                $vehicle->car_type_id = $carTypeId;
+                $vehicle->setAvailableSubjectsFromArray($availableSubjects);
+                $vehicle->car_type_identified_at = now();
+                $vehicle->last_haynespro_sync_at = now();
+
+                // Handle vehicle make and model
+                if (!empty($vehicleInfo['CombinedMake'])) {
+                    $makeName = $vehicleInfo['CombinedMake'];
+                    $make = VehicleMake::firstOrCreate(['name' => $makeName]);
+                    $vehicle->vehicle_make_id = $make->id;
+
+                    if (!empty($vehicleInfo['CombinedModel'])) {
+                        $modelName = $vehicleInfo['CombinedModel'];
+                        $model = VehicleModel::firstOrCreate([
+                            'name' => $modelName,
+                            'vehicle_make_id' => $make->id
+                        ]);
+                        $vehicle->vehicle_model_id = $model->id;
+                    }
+                }
+
+                $vehicle->save();
+
+                Log::info('Vehicle Lookup: Vehicle saved successfully with car type identification', [
                     'registration' => $registration,
-                    'error_message' => $e->getMessage(),
-                    'error_type' => get_class($e),
-                    'error_file' => $e->getFile(),
-                    'error_line' => $e->getLine(),
-                    'trace' => $e->getTraceAsString(),
-                    'haynespro_config' => [
-                        'vrm_token_configured' => !empty(config('services.haynespro.vrm_token')),
-                        'vrm_username_configured' => !empty(config('services.haynespro.vrm_username'))
-                    ]
+                    'vehicle_id' => $vehicle->id,
+                    'car_type_id' => $carTypeId,
+                    'subjects_count' => count($availableSubjects)
                 ]);
-                return back()->withErrors(['registration' => 'Error looking up vehicle: ' . $e->getMessage()]);
+
+                return redirect()->route('vehicle-details', $vehicle->registration);
+
+            } catch (Exception $e) {
+                Log::error('Vehicle Lookup: Exception during vehicle identification', [
+                    'registration' => $registration,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+
+                return back()->with('error', 'Failed to identify vehicle: ' . $e->getMessage());
             }
         } catch (\Exception $e) {
             Log::error('Vehicle lookup error', [
