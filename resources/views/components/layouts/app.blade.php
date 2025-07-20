@@ -94,8 +94,8 @@
         <flux:main container>
             <!-- Desktop Vehicle Sidebar (Conditional) -->
             @if(isset($vehicle))
-                <div class="flex max-md:flex-col items-start">
-                    <div class="w-full md:w-[220px] pb-4 me-10">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    <div class="col-span-1 md:col-span-3 pb-4">
                         <!-- Vehicle Image -->
                         @if($vehicleImage)
                         <div class="mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
@@ -128,7 +128,7 @@
                         </flux:navlist>
                     </div>
                     <flux:separator class="md:hidden" />
-                    <div class="flex-1 max-md:pt-6 self-stretch">
+                    <div class="col-span-1 md:col-span-9 max-md:pt-6">
                         {{ $slot }}
                     </div>
                 </div>
