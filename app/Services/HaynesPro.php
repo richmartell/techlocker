@@ -1534,6 +1534,8 @@ class HaynesPro
                 'descriptionLanguage' => 'en',
                 'carTypeId' => $carTypeId,
                 'systemId' => $systemId,
+                'repairtimesTypeId' => 120226,
+                'rtTypeCategory' => 'CAR',
                 'includeSmartLinks' => true,
                 'includeServiceTimes' => true,
                 'maintenanceBasedType' => 'SUBJECT_BASED'
@@ -1716,6 +1718,45 @@ class HaynesPro
             return $response;
         } catch (Exception $e) {
             Log::error('HaynesPro: Exception getting calculated maintenance V4', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get all calculated maintenance intervals for a vehicle (Version 4).
+     * This version doesn't require specific mileage/months and returns all intervals.
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The maintenance intervals data
+     * @throws Exception If the API request fails
+     */
+    public function getAllMaintenanceIntervals(int $carTypeId): array
+    {
+        try {
+            Log::info('HaynesPro: Starting all maintenance intervals lookup', [
+                'carTypeId' => $carTypeId
+            ]);
+
+            $response = $this->request('getCalculatedMaintenanceV4', [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved all maintenance intervals', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting all maintenance intervals', [
                 'carTypeId' => $carTypeId,
                 'error_message' => $e->getMessage(),
                 'error_code' => $e->getCode(),

@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Vehicle Details - ' . $vehicle->registration">
+<x-layouts.app :title="'Vehicle Details - ' . $vehicle->registration" :vehicle="$vehicle" :vehicleImage="$vehicleImage ?? null">
     <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
         <div class="p-6 h-full flex-1 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
             <div class="flex flex-col gap-6">
@@ -33,7 +33,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Basic Vehicle Information -->
                     <div class="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
                         <h3 class="text-lg font-semibold mb-4 flex items-center">
@@ -76,21 +76,6 @@
                             @endif
                         </dl>
                     </div>
-
-                    <!-- Vehicle Image -->
-                    @if($vehicleImage)
-                    <div class="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
-                        <h3 class="text-lg font-semibold mb-4 flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-primary-600" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M4 3a2 2 0 012-2h8a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V3zm5 2a3 3 0 00-3 3v6a3 3 0 006 0V8a3 3 0 00-3-3z" clip-rule="evenodd" />
-                            </svg>
-                            Vehicle Image
-                        </h3>
-                        <div class="flex justify-center items-center">
-                            <img src="{{ $vehicleImage }}" alt="{{ $vehicle->make?->name ?? 'Vehicle' }} {{ $vehicle->model?->name ?? '' }}" class="max-w-full h-auto rounded-lg shadow-md">
-                        </div>
-                    </div>
-                    @endif
 
                     <!-- Technical Specifications -->
                     <div class="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">

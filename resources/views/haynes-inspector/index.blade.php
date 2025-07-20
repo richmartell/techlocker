@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Haynes Inspector - ' . $vehicle->registration">
+<x-layouts.app :title="'Haynes Inspector - ' . $vehicle->registration" :vehicle="$vehicle" :vehicleImage="null">
     <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
         <div class="p-6 h-full flex-1 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
             <div class="flex flex-col gap-6">

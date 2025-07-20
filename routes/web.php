@@ -210,6 +210,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [HaynesInspectorController::class, 'index'])->name('haynes-inspector.index');
         Route::post('/execute/{method}', [HaynesInspectorController::class, 'executeMethod'])->name('haynes-inspector.execute');
     });
+    
+    // Maintenance Schedules Routes
+    Route::prefix('vehicle/{registration}/maintenance')->group(function () {
+        Route::get('/schedules', [TechnicalInformationController::class, 'schedules'])->name('maintenance.schedules');
+        Route::get('/schedules/{systemId}/{periodId}', [TechnicalInformationController::class, 'scheduleDetails'])->name('maintenance.schedule-details');
+    });
 });
 
 require __DIR__.'/auth.php';

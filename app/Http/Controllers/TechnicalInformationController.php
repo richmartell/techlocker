@@ -353,6 +353,308 @@ class TechnicalInformationController extends Controller
     }
 
     /**
+     * Show maintenance schedules (service intervals) for a vehicle
+     */
+    public function schedules(string $registration)
+    {
+        try {
+            $vehicle = Vehicle::with(['make', 'model'])
+                ->where('registration', $registration)
+                ->firstOrFail();
+            
+            $carTypeId = $this->getCarTypeId($vehicle);
+
+            if (!$carTypeId) {
+                return back()->with('error', 'Vehicle identification not available for maintenance schedules');
+            }
+
+            // Get maintenance systems which contain the service intervals
+            $maintenanceSystems = $this->haynespro->getMaintenanceSystems($carTypeId);
+
+            // Extract service intervals from maintenance periods
+            $maintenanceIntervals = [];
+            foreach ($maintenanceSystems as $system) {
+                $systemId = $system['id'] ?? 0;
+                $systemName = $system['name'] ?? 'Maintenance System';
+                
+                if (isset($system['maintenancePeriods']) && !empty($system['maintenancePeriods'])) {
+                    foreach ($system['maintenancePeriods'] as $period) {
+                        $periodId = $period['id'] ?? 0;
+                        $periodName = $period['name'] ?? '';
+                        
+                        // Parse mileage and months from period name (e.g., "34,000 km/24 months")
+                        $intervalMileage = 0;
+                        $intervalMonths = 0;
+                        
+                        // Extract numbers from period name
+                        if (preg_match('/([0-9,]+)\s*(km|miles).*?(\d+)\s*months?/i', $periodName, $matches)) {
+                            $rawMileage = (int) str_replace(',', '', $matches[1]);
+                            $unit = strtolower($matches[2]);
+                            $intervalMonths = (int) $matches[3];
+                            
+                            // Convert kilometers to miles if needed
+                            if ($unit === 'km') {
+                                $convertedMiles = $rawMileage * 0.621371;
+                                // Round down to nearest 1000 miles
+                                $intervalMileage = (int) (floor($convertedMiles / 1000) * 1000);
+                            } else {
+                                // Round down to nearest 1000 miles even if already in miles
+                                $intervalMileage = (int) (floor($rawMileage / 1000) * 1000);
+                            }
+                        }
+                        
+                        // Only add periods that have clear service intervals (not special offers, etc.)
+                        if ($intervalMileage > 0 && $intervalMonths > 0) {
+                            // Create a description with converted mileage in miles
+                            $convertedDescription = number_format($intervalMileage) . ' miles / ' . $intervalMonths . ' months';
+                            
+                            $maintenanceIntervals[] = [
+                                'systemId' => $systemId,
+                                'systemName' => $systemName,
+                                'periodId' => $periodId,
+                                'intervalMileage' => $intervalMileage,
+                                'intervalMonths' => $intervalMonths,
+                                'description' => $convertedDescription,
+                                'originalDescription' => $periodName,
+                                'tasks' => [] // Will be populated when viewing details
+                            ];
+                        }
+                    }
+                }
+            }
+
+            return view('maintenance.schedules', [
+                'vehicle' => $vehicle,
+                'maintenanceIntervals' => $maintenanceIntervals,
+                'maintenanceSystems' => $maintenanceSystems,
+                'carTypeId' => $carTypeId
+            ]);
+        } catch (Exception $e) {
+            Log::error('Maintenance schedules error', [
+                'registration' => $registration,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->with('error', 'Failed to load maintenance schedules: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show details for a specific maintenance schedule (service interval)
+     */
+    public function scheduleDetails(string $registration, int $systemId, int $periodId)
+    {
+        try {
+            $vehicle = Vehicle::with(['make', 'model'])
+                ->where('registration', $registration)
+                ->firstOrFail();
+            
+            $carTypeId = $this->getCarTypeId($vehicle);
+
+            if (!$carTypeId) {
+                return back()->with('error', 'Vehicle identification not available for schedule details');
+            }
+
+            // Get the specific maintenance tasks for this system and period using V9 API
+            $maintenanceTasks = [];
+            try {
+                // Use getMaintenanceTasksV9 which provides more comprehensive task data
+                $rawTasks = $this->haynespro->getMaintenanceTasksV9($carTypeId, $systemId, $periodId);
+                
+                // Flatten the nested structure - V9 API returns tasks with subTasks
+                $maintenanceTasks = [];
+                foreach ($rawTasks as $mainTask) {
+                    $mainTaskName = $mainTask['name'] ?? 'Maintenance Task';
+                    
+                    if (isset($mainTask['subTasks']) && is_array($mainTask['subTasks'])) {
+                        // Process each subtask
+                        foreach ($mainTask['subTasks'] as $subTask) {
+                            // Helper function to safely convert to string
+                            $safeString = function($value) {
+                                if (is_array($value)) {
+                                    // Handle nested arrays by converting each element to string first
+                                    $flatValues = array_map(function($item) {
+                                        return is_array($item) ? json_encode($item) : (string)$item;
+                                    }, $value);
+                                    return !empty(array_filter($flatValues)) ? implode(', ', array_filter($flatValues)) : '';
+                                }
+                                return (string)($value ?? '');
+                            };
+                            
+                            $formattedTask = [
+                                'name' => $safeString($subTask['name'] ?? 'Task'),
+                                'description' => $safeString($subTask['remark'] ?? ''),
+                                'category' => $safeString($mainTaskName),
+                                'type' => $safeString($mainTaskName),
+                                'procedure' => $safeString($subTask['longDescriptions'] ?? ''),
+                                'serviceTime' => $safeString($subTask['times'] ?? ''),
+                                'time' => $safeString($subTask['times'] ?? ''),
+                                'descriptionId' => $subTask['descriptionId'] ?? null,
+                                'order' => $subTask['order'] ?? 0,
+                                'mandatoryReplacement' => $subTask['mandatoryReplacement'] ?? false,
+                                'includeByDefault' => $subTask['includeByDefault'] ?? true,
+                                'parts' => $subTask['serviceTaskParts'] ?? [],
+                                'smartLinks' => $safeString($subTask['smartLinks'] ?? ''),
+                                'generalCriterias' => $subTask['generalCriterias'] ?? []
+                            ];
+                            $maintenanceTasks[] = $formattedTask;
+                        }
+                    } else {
+                        // If no subtasks, use the main task itself
+                        // Helper function to safely convert to string
+                        $safeString = function($value) {
+                            if (is_array($value)) {
+                                // Handle nested arrays by converting each element to string first
+                                $flatValues = array_map(function($item) {
+                                    return is_array($item) ? json_encode($item) : (string)$item;
+                                }, $value);
+                                return !empty(array_filter($flatValues)) ? implode(', ', array_filter($flatValues)) : '';
+                            }
+                            return (string)($value ?? '');
+                        };
+                        
+                        $formattedTask = [
+                            'name' => $safeString($mainTaskName),
+                            'description' => $safeString($mainTask['remark'] ?? ''),
+                            'category' => 'General',
+                            'type' => 'General',
+                            'procedure' => $safeString($mainTask['longDescriptions'] ?? ''),
+                            'serviceTime' => $safeString($mainTask['times'] ?? ''),
+                            'time' => $safeString($mainTask['times'] ?? ''),
+                            'descriptionId' => $mainTask['descriptionId'] ?? null,
+                            'order' => $mainTask['order'] ?? 0,
+                            'mandatoryReplacement' => $mainTask['mandatoryReplacement'] ?? false,
+                            'includeByDefault' => $mainTask['includeByDefault'] ?? true,
+                            'parts' => $mainTask['serviceTaskParts'] ?? [],
+                            'smartLinks' => $safeString($mainTask['smartLinks'] ?? ''),
+                            'generalCriterias' => $mainTask['generalCriterias'] ?? []
+                        ];
+                        $maintenanceTasks[] = $formattedTask;
+                    }
+                }
+                
+                // Sort tasks by category first, then by order within each category
+                usort($maintenanceTasks, function($a, $b) {
+                    // First, sort by category (Engine, Transmission, etc.)
+                    $categoryComparison = strcasecmp($a['category'] ?? 'ZZZ', $b['category'] ?? 'ZZZ');
+                    if ($categoryComparison !== 0) {
+                        return $categoryComparison;
+                    }
+                    // If categories are the same, sort by order within the category
+                    return ($a['order'] ?? 0) <=> ($b['order'] ?? 0);
+                });
+                
+
+                
+                Log::info('Retrieved and processed maintenance tasks V9', [
+                    'carTypeId' => $carTypeId,
+                    'systemId' => $systemId,
+                    'periodId' => $periodId,
+                    'rawTaskCount' => count($rawTasks),
+                    'processedTaskCount' => count($maintenanceTasks)
+                ]);
+            } catch (Exception $e) {
+                Log::warning('Failed to get maintenance tasks V9', [
+                    'carTypeId' => $carTypeId,
+                    'systemId' => $systemId,
+                    'periodId' => $periodId,
+                    'error' => $e->getMessage()
+                ]);
+                
+                // Fallback to older method if V9 fails
+                try {
+                    $maintenanceTasks = $this->haynespro->getMaintenanceTasks($carTypeId, $systemId, $periodId);
+                    Log::info('Used fallback maintenance tasks method', [
+                        'taskCount' => count($maintenanceTasks)
+                    ]);
+                } catch (Exception $fallbackError) {
+                    Log::error('Both maintenance task methods failed', [
+                        'v9Error' => $e->getMessage(),
+                        'fallbackError' => $fallbackError->getMessage()
+                    ]);
+                }
+            }
+            
+            // Get maintenance parts for this period
+            $maintenanceParts = [];
+            if ($periodId > 0) {
+                try {
+                    $maintenanceParts = $this->haynespro->getMaintenancePartsForPeriod($carTypeId, $periodId);
+                } catch (Exception $e) {
+                    Log::warning('Failed to get maintenance parts for period', [
+                        'carTypeId' => $carTypeId,
+                        'periodId' => $periodId,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Get the interval information from maintenance systems
+            $intervalInfo = null;
+            try {
+                $maintenanceSystems = $this->haynespro->getMaintenanceSystems($carTypeId);
+                foreach ($maintenanceSystems as $system) {
+                    if (($system['id'] ?? 0) == $systemId && isset($system['maintenancePeriods'])) {
+                        foreach ($system['maintenancePeriods'] as $period) {
+                            if (($period['id'] ?? 0) == $periodId) {
+                                $periodName = $period['name'] ?? '';
+                                
+                                // Parse mileage and months from period name
+                                $intervalMileage = 0;
+                                $intervalMonths = 0;
+                                if (preg_match('/([0-9,]+)\s*(km|miles).*?(\d+)\s*months?/i', $periodName, $matches)) {
+                                    $rawMileage = (int) str_replace(',', '', $matches[1]);
+                                    $unit = strtolower($matches[2]);
+                                    $intervalMonths = (int) $matches[3];
+                                    
+                                    // Convert kilometers to miles if needed
+                                    if ($unit === 'km') {
+                                        $convertedMiles = $rawMileage * 0.621371;
+                                        // Round down to nearest 1000 miles
+                                        $intervalMileage = (int) (floor($convertedMiles / 1000) * 1000);
+                                    } else {
+                                        // Round down to nearest 1000 miles even if already in miles
+                                        $intervalMileage = (int) (floor($rawMileage / 1000) * 1000);
+                                    }
+                                }
+                                
+                                $intervalInfo = [
+                                    'intervalMileage' => $intervalMileage,
+                                    'intervalMonths' => $intervalMonths,
+                                    'systemName' => $system['name'] ?? 'Maintenance System',
+                                    'description' => $periodName
+                                ];
+                                break 2;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                Log::warning('Failed to get interval info', ['error' => $e->getMessage()]);
+            }
+
+            return view('maintenance.schedule-details', [
+                'vehicle' => $vehicle,
+                'maintenanceTasks' => $maintenanceTasks,
+                'maintenanceParts' => $maintenanceParts,
+                'carTypeId' => $carTypeId,
+                'systemId' => $systemId,
+                'periodId' => $periodId,
+                'intervalInfo' => $intervalInfo
+            ]);
+        } catch (Exception $e) {
+            Log::error('Schedule details error', [
+                'registration' => $registration,
+                'systemId' => $systemId,
+                'periodId' => $periodId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->with('error', 'Failed to load schedule details: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Helper method to get carTypeId from vehicle
      */
     private function getCarTypeId(Vehicle $vehicle): ?int

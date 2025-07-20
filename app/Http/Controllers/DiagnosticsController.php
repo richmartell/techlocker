@@ -14,17 +14,19 @@ class DiagnosticsController extends Controller
      */
     public function show(string $registration): View
     {
-        // In a real application, this would fetch the vehicle data from a database
-        // For now, we'll use sample data
+        $vehicle = \App\Models\Vehicle::with(['make', 'model'])
+            ->where('registration', $registration)
+            ->firstOrFail();
+
         $vehicleData = [
-            'registration' => $registration,
-            'make' => 'Land Rover',
-            'model' => 'Defender 90',
-            'year' => '2022',
-            'engine' => '2.0L Ingenium',
+            'registration' => $vehicle->registration,
+            'make' => $vehicle->make?->name ?? 'Unknown',
+            'model' => $vehicle->model?->name ?? 'Unknown',
+            'year' => $vehicle->year_of_manufacture ?? 'Unknown',
+            'engine' => $vehicle->engine_capacity ? $vehicle->engine_capacity . 'cc' : 'Unknown',
         ];
 
-        return view('diagnostics-ai', $vehicleData);
+        return view('diagnostics-ai', array_merge($vehicleData, ['vehicle' => $vehicle]));
     }
 
     /**
