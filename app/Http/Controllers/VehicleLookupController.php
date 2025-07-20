@@ -57,11 +57,18 @@ class VehicleLookupController extends Controller
                 $haynesProService = app(HaynesPro::class);
                 $identificationData = $haynesProService->identifyVehicleComplete($registration);
 
-                if (empty($identificationData['vehicle_data'])) {
+                // Handle cases where no vehicle data is found
+                if (empty($identificationData['vehicle_data']) || 
+                    $identificationData['identification_method'] === 'not_found') {
+                    
+                    $errorMessage = $identificationData['error'] ?? 'No vehicle found with registration ' . $registration;
+                    
                     Log::warning('Vehicle Lookup: No vehicle information found', [
-                        'registration' => $registration
+                        'registration' => $registration,
+                        'identification_method' => $identificationData['identification_method'] ?? 'unknown'
                     ]);
-                    return back()->with('error', 'No vehicle found with registration ' . $registration);
+                    
+                    return back()->with('error', $errorMessage);
                 }
 
                 $vehicleInfo = $identificationData['vehicle_data'];

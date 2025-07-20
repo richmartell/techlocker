@@ -125,7 +125,31 @@ class HaynesPro
             throw new Exception("HaynesPro API request failed: {$response->status()}");
         }
 
-        return $response->json();
+        // Get the JSON response and ensure it's always an array
+        $data = $response->json();
+        
+        // Handle null or empty responses by returning an empty array
+        if ($data === null || $data === '') {
+            Log::info('HaynesPro API returned null/empty response', [
+                'endpoint' => $endpoint,
+                'method' => $method,
+                'status' => $response->status()
+            ]);
+            return [];
+        }
+
+        // Ensure the response is an array
+        if (!is_array($data)) {
+            Log::warning('HaynesPro API returned non-array response', [
+                'endpoint' => $endpoint,
+                'method' => $method,
+                'response_type' => gettype($data),
+                'response_data' => $data
+            ]);
+            return [];
+        }
+
+        return $data;
     }
 
     public function vrid()
@@ -953,10 +977,29 @@ class HaynesPro
             if ($response->successful()) {
                 $data = $response->json();
                 
+                // Handle null or empty VRM API responses
+                if ($data === null || $data === '') {
+                    Log::info('HaynesPro VRM API: Empty response for vehicle', [
+                        'vrm' => $vrm,
+                        'status' => $response->status()
+                    ]);
+                    return [];
+                }
+
+                // Ensure data is an array
+                if (!is_array($data)) {
+                    Log::warning('HaynesPro VRM API: Non-array response', [
+                        'vrm' => $vrm,
+                        'response_type' => gettype($data),
+                        'response_data' => $data
+                    ]);
+                    return [];
+                }
+                
                 Log::info('HaynesPro VRM API: Successfully retrieved vehicle details', [
                     'vrm' => $vrm,
                     'status' => $response->status(),
-                    'data_keys' => array_keys($data ?? []),
+                    'data_keys' => array_keys($data),
                     'vehicle_info' => $data['VehicleInfo'] ?? null,
                     'full_response' => $data
                 ]);
@@ -1430,6 +1473,424 @@ class HaynesPro
     }
 
     /**
+     * Get maintenance systems for a vehicle by carTypeId (Version 7).
+     * Based on getMaintenanceSystemsV7 from HaynesPro API documentation
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The maintenance systems data
+     * @throws Exception If the API request fails
+     */
+    public function getMaintenanceSystemsV7(int $carTypeId): array
+    {
+        try {
+            Log::info('HaynesPro: Starting maintenance systems V7 lookup', [
+                'carTypeId' => $carTypeId
+            ]);
+
+            $response = $this->request('getMaintenanceSystemsV7', [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved maintenance systems V7', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting maintenance systems V7', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get maintenance tasks for a vehicle by carTypeId (Version 9).
+     * Based on getMaintenanceTasksV9 from HaynesPro API documentation
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @param int $systemId The maintenance system ID
+     * @param int $periodId The maintenance period ID (optional)
+     * @return array The maintenance tasks data
+     * @throws Exception If the API request fails
+     */
+    public function getMaintenanceTasksV9(int $carTypeId, int $systemId, ?int $periodId = null): array
+    {
+        try {
+            Log::info('HaynesPro: Starting maintenance tasks V9 lookup', [
+                'carTypeId' => $carTypeId,
+                'systemId' => $systemId,
+                'periodId' => $periodId
+            ]);
+
+            $params = [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId,
+                'systemId' => $systemId,
+                'includeSmartLinks' => true,
+                'includeServiceTimes' => true,
+                'maintenanceBasedType' => 'SUBJECT_BASED'
+            ];
+
+            if ($periodId) {
+                $params['periodId'] = $periodId;
+            }
+
+            $response = $this->request('getMaintenanceTasksV9', $params, 'get');
+
+            Log::info('HaynesPro: Successfully retrieved maintenance tasks V9', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting maintenance tasks V9', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get maintenance forms for a vehicle by carTypeId.
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The maintenance forms data
+     * @throws Exception If the API request fails
+     */
+    public function getMaintenanceForms(int $carTypeId): array
+    {
+        try {
+            Log::info('HaynesPro: Starting maintenance forms lookup', [
+                'carTypeId' => $carTypeId
+            ]);
+
+            $response = $this->request('getMaintenanceForms', [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved maintenance forms', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting maintenance forms', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get maintenance system overview for a vehicle by carTypeId (Version 2).
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The maintenance system overview data
+     * @throws Exception If the API request fails
+     */
+    public function getMaintenanceSystemOverviewV2(int $carTypeId): array
+    {
+        try {
+            Log::info('HaynesPro: Starting maintenance system overview V2 lookup', [
+                'carTypeId' => $carTypeId
+            ]);
+
+            $response = $this->request('getMaintenanceSystemOverviewV2', [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved maintenance system overview V2', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting maintenance system overview V2', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get maintenance parts for a specific period.
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @param int $periodId The maintenance period ID
+     * @return array The maintenance parts data
+     * @throws Exception If the API request fails
+     */
+    public function getMaintenancePartsForPeriod(int $carTypeId, int $periodId): array
+    {
+        try {
+            Log::info('HaynesPro: Starting maintenance parts for period lookup', [
+                'carTypeId' => $carTypeId,
+                'periodId' => $periodId
+            ]);
+
+            $response = $this->request('getMaintenancePartsForPeriod', [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId,
+                'periodId' => $periodId
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved maintenance parts for period', [
+                'carTypeId' => $carTypeId,
+                'periodId' => $periodId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting maintenance parts for period', [
+                'carTypeId' => $carTypeId,
+                'periodId' => $periodId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get calculated maintenance for a vehicle (Version 4).
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @param int $mileage The vehicle mileage
+     * @param int $months The months in service
+     * @return array The calculated maintenance data
+     * @throws Exception If the API request fails
+     */
+    public function getCalculatedMaintenanceV4(int $carTypeId, int $mileage, int $months): array
+    {
+        try {
+            Log::info('HaynesPro: Starting calculated maintenance V4 lookup', [
+                'carTypeId' => $carTypeId,
+                'mileage' => $mileage,
+                'months' => $months
+            ]);
+
+            $response = $this->request('getCalculatedMaintenanceV4', [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId,
+                'mileage' => $mileage,
+                'months' => $months
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved calculated maintenance V4', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting calculated maintenance V4', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get timing belt maintenance tasks for a vehicle (Version 5).
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The timing belt maintenance tasks data
+     * @throws Exception If the API request fails
+     */
+    public function getTimingBeltMaintenanceTasksV5(int $carTypeId): array
+    {
+        try {
+            Log::info('HaynesPro: Starting timing belt maintenance tasks V5 lookup', [
+                'carTypeId' => $carTypeId
+            ]);
+
+            $response = $this->request('getTimingBeltMaintenanceTasksV5', [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved timing belt maintenance tasks V5', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting timing belt maintenance tasks V5', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get timing belt replacement intervals for a vehicle.
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The timing belt replacement intervals data
+     * @throws Exception If the API request fails
+     */
+    public function getTimingBeltReplacementIntervals(int $carTypeId): array
+    {
+        try {
+            Log::info('HaynesPro: Starting timing belt replacement intervals lookup', [
+                'carTypeId' => $carTypeId
+            ]);
+
+            $response = $this->request('getTimingBeltReplacementIntervals', [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved timing belt replacement intervals', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting timing belt replacement intervals', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get wear parts intervals for a vehicle (Version 3).
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The wear parts intervals data
+     * @throws Exception If the API request fails
+     */
+    public function getWearPartsIntervalsV3(int $carTypeId): array
+    {
+        try {
+            Log::info('HaynesPro: Starting wear parts intervals V3 lookup', [
+                'carTypeId' => $carTypeId
+            ]);
+
+            $response = $this->request('getWearPartsIntervalsV3', [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved wear parts intervals V3', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting wear parts intervals V3', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get technical drawings for a vehicle by carTypeId and system group (Version 4).
+     * Based on getDrawingsV4 from HaynesPro API documentation
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @param string $systemGroup The system group (e.g., 'ENGINE', 'SUSPENSION')
+     * @return array The technical drawings data
+     * @throws Exception If the API request fails
+     */
+    public function getDrawingsV4(int $carTypeId, ?string $systemGroup = null): array
+    {
+        try {
+            Log::info('HaynesPro: Starting drawings V4 lookup', [
+                'carTypeId' => $carTypeId,
+                'systemGroup' => $systemGroup
+            ]);
+
+            $params = [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId
+            ];
+
+            if ($systemGroup) {
+                $params['systemGroup'] = $systemGroup;
+            }
+
+            $response = $this->request('getDrawingsV4', $params, 'get');
+
+            Log::info('HaynesPro: Successfully retrieved drawings V4', [
+                'carTypeId' => $carTypeId,
+                'systemGroup' => $systemGroup,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting drawings V4', [
+                'carTypeId' => $carTypeId,
+                'systemGroup' => $systemGroup,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
      * Complete vehicle identification process:
      * 1. Get vehicle details from VRM API
      * 2. Use VIN to decode and get car types
@@ -1449,8 +1910,20 @@ class HaynesPro
             // Step 1: Get vehicle details from VRM API
             $vrmData = $this->getVehicleDetailsByVrm($registration);
             
-            if (!isset($vrmData['VehicleInfo'])) {
-                throw new Exception('No vehicle information found from VRM API');
+            // Handle empty VRM response
+            if (empty($vrmData) || !isset($vrmData['VehicleInfo'])) {
+                Log::warning('HaynesPro: No vehicle data found for registration', [
+                    'registration' => $registration,
+                    'vrm_response' => $vrmData
+                ]);
+                
+                return [
+                    'vehicle_data' => null,
+                    'car_type_id' => null,
+                    'available_subjects' => [],
+                    'identification_method' => 'not_found',
+                    'error' => 'No vehicle found with registration ' . $registration
+                ];
             }
 
             $vehicleInfo = $vrmData['VehicleInfo'];

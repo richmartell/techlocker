@@ -44,7 +44,27 @@ Route::get('vehicle/{registration}', function ($registration) {
     $vehicle = \App\Models\Vehicle::with(['make', 'model'])
         ->where('registration', $registration)
         ->firstOrFail();
-    return view('vehicle-details', ['vehicle' => $vehicle]);
+    
+    // Fetch vehicle image from HaynesPro API if car_type_id is available
+    $vehicleImage = null;
+    if ($vehicle->car_type_id) {
+        try {
+            $haynesPro = app(HaynesPro::class);
+            $vehicleDetails = $haynesPro->getVehicleDetails($vehicle->car_type_id);
+            $vehicleImage = $vehicleDetails['image'] ?? null;
+        } catch (\Exception $e) {
+            Log::warning('Failed to fetch vehicle image', [
+                'registration' => $registration,
+                'car_type_id' => $vehicle->car_type_id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    return view('vehicle-details', [
+        'vehicle' => $vehicle,
+        'vehicleImage' => $vehicleImage
+    ]);
 })->middleware(['auth', 'verified'])
   ->name('vehicle-details');
 

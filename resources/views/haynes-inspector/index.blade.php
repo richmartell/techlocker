@@ -101,6 +101,13 @@
                                             <h4 class="font-medium text-sm mb-2">{{ $method['name'] }}</h4>
                                             <p class="text-xs text-neutral-600 dark:text-neutral-400 mb-3 flex-1">{{ $method['description'] }}</p>
                                             
+                                            <div class="mb-3">
+                                                <div class="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Method:</div>
+                                                <div class="text-xs font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-2 rounded border border-blue-200 dark:border-blue-800">
+                                                    {{ $method['method'] }}
+                                                </div>
+                                            </div>
+                                            
                                             @if(count($method['parameters']) > 0)
                                                 <div class="mb-3">
                                                     <div class="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Parameters:</div>
@@ -112,17 +119,44 @@
                                                 </div>
                                             @endif
                                             
-                                            <flux:button 
-                                                size="sm" 
-                                                variant="primary" 
-                                                class="w-full"
-                                                onclick="executeApiMethod('{{ $method['method'] }}', '{{ $method['name'] }}', {{ json_encode($method['parameters']) }})"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                                                </svg>
-                                                Execute
-                                            </flux:button>
+                                            @if(in_array($method['method'], ['getAdjustmentsV7', 'getLubricantsV5']))
+                                                <div class="flex gap-2">
+                                                    <flux:button 
+                                                        size="sm" 
+                                                        variant="primary" 
+                                                        class="flex-1"
+                                                        onclick="executeApiMethod('{{ $method['method'] }}', '{{ $method['name'] }}', {{ json_encode($method['parameters']) }})"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                                                        </svg>
+                                                        Execute (JSON)
+                                                    </flux:button>
+                                                    <flux:button 
+                                                        size="sm" 
+                                                        variant="outline" 
+                                                        class="flex-1"
+                                                        onclick="executeApiMethodFormatted('{{ $method['method'] }}', '{{ $method['name'] }}', {{ json_encode($method['parameters']) }})"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        Execute (List)
+                                                    </flux:button>
+                                                </div>
+                                            @else
+                                                <flux:button 
+                                                    size="sm" 
+                                                    variant="primary" 
+                                                    class="w-full"
+                                                    onclick="executeApiMethod('{{ $method['method'] }}', '{{ $method['name'] }}', {{ json_encode($method['parameters']) }})"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                                                    </svg>
+                                                    Execute
+                                                </flux:button>
+                                            @endif
                                         </div>
                                     </div>
                                 @endforeach
@@ -249,6 +283,135 @@
                 currentResponse = errorData;
                 showResponseModal(name, method, errorData);
             });
+        }
+
+        function executeApiMethodFormatted(method, name, parameters) {
+            // Show loading overlay
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+            
+            // Prepare the request
+            const url = `{{ route('haynes-inspector.execute', ['registration' => $vehicle->registration, 'method' => '__METHOD__']) }}`.replace('__METHOD__', method);
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(parameters)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading overlay
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('flex');
+                
+                // Store response for copying
+                currentResponse = data;
+                
+                // Format the response for adjustments/lubricants
+                const formattedContent = formatAdjustmentsLubricants(data, method);
+                
+                // Show modal with formatted response
+                showFormattedResponseModal(name, method, formattedContent, data);
+            })
+            .catch(error => {
+                // Hide loading overlay
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('flex');
+                
+                console.error('Error:', error);
+                
+                // Show error in modal
+                const errorData = {
+                    success: false,
+                    error: 'Network error: ' + error.message,
+                    method: method,
+                    timestamp: new Date().toISOString()
+                };
+                currentResponse = errorData;
+                showResponseModal(name, method, errorData);
+            });
+        }
+
+        function formatAdjustmentsLubricants(data, method) {
+            if (!data.success || !data.data) {
+                return 'No data available or API call failed.';
+            }
+
+            let formatted = '';
+            
+            // Function to recursively extract name-value pairs from subAdjustments/subLubricants
+            function extractItems(items, level = 0) {
+                let result = '';
+                const indent = '  '.repeat(level);
+                
+                if (Array.isArray(items)) {
+                    items.forEach(item => {
+                        if (item.name && item.value !== null && item.value !== undefined) {
+                            result += `${indent}• ${item.name}: ${item.value}\n`;
+                        } else if (item.name) {
+                            result += `${indent}• ${item.name}\n`;
+                        }
+                        
+                        // Recursively process nested items
+                        if (item.subAdjustments && Array.isArray(item.subAdjustments)) {
+                            result += extractItems(item.subAdjustments, level + 1);
+                        }
+                        if (item.subLubricants && Array.isArray(item.subLubricants)) {
+                            result += extractItems(item.subLubricants, level + 1);
+                        }
+                    });
+                }
+                
+                return result;
+            }
+
+            // Process the response data
+            if (Array.isArray(data.data)) {
+                data.data.forEach((group, groupIndex) => {
+                    if (group.name) {
+                        formatted += `\n=== ${group.name} ===\n`;
+                    }
+                    
+                    // Check for subAdjustments
+                    if (group.subAdjustments && Array.isArray(group.subAdjustments)) {
+                        formatted += extractItems(group.subAdjustments);
+                    }
+                    
+                    // Check for subLubricants
+                    if (group.subLubricants && Array.isArray(group.subLubricants)) {
+                        formatted += extractItems(group.subLubricants);
+                    }
+                    
+                    // Check for direct items in case the structure is different
+                    if (group.name && group.value !== null && group.value !== undefined) {
+                        formatted += `• ${group.name}: ${group.value}\n`;
+                    }
+                });
+            } else if (data.data.subAdjustments || data.data.subLubricants) {
+                // Handle single object response
+                if (data.data.subAdjustments) {
+                    formatted += extractItems(data.data.subAdjustments);
+                }
+                if (data.data.subLubricants) {
+                    formatted += extractItems(data.data.subLubricants);
+                }
+            }
+
+            return formatted || 'No name-value pairs found in the response.';
+        }
+
+        function showFormattedResponseModal(name, method, formattedContent, originalData) {
+            document.getElementById('modalTitle').textContent = name + ' (Formatted)';
+            document.getElementById('modalMethod').textContent = `Method: ${method}`;
+            document.getElementById('responseContent').textContent = formattedContent;
+            document.getElementById('responseTimestamp').textContent = `Executed at: ${originalData.timestamp || 'Unknown'}`;
+            
+            document.getElementById('responseModal').classList.remove('hidden');
+            document.getElementById('responseModal').classList.add('flex');
         }
 
         function showResponseModal(name, method, data) {
