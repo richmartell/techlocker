@@ -15,20 +15,25 @@ class TestHaynesProAuth extends Command
         $this->info('Testing HaynesPro authentication...');
 
         try {
-            // This will trigger the getVrid() method internally
-            $tree = $haynesPro->getIdentificationTree();
+            // Test authentication by getting VRID directly
+            $vrid = $haynesPro->vrid();
             
             $this->info('Authentication successful!');
             $this->info('VRID retrieved and cached for 8 hours.');
-            $this->info('Successfully retrieved identification tree.');
+            $this->info('VRID: ' . $vrid);
             
-            // Show a sample of the tree data
-            $this->info("\nSample of identification tree:");
+            // Test a secondary method that requires authentication
+            $makes = $haynesPro->getVehicleMakes();
+            
+            $this->info('Successfully retrieved vehicle makes.');
+            
+            // Show a sample of the makes data
+            $this->info("\nSample of vehicle makes:");
             $this->table(
-                ['Make', 'Model Count'],
-                collect($tree)->take(5)->map(fn($make) => [
-                    $make['name'] ?? 'N/A',
-                    count($make['models'] ?? [])
+                ['Make ID', 'Make Name'],
+                collect($makes)->take(5)->map(fn($make) => [
+                    $make['id'] ?? 'N/A',
+                    $make['name'] ?? 'N/A'
                 ])
             );
 

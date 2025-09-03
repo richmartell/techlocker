@@ -64,22 +64,72 @@ class HaynesPro
         }
 
         // If no cached VRID, authenticate
+        Log::info('HaynesPro authentication: Starting authentication request', [
+            'endpoint' => "{$this->baseUrl}/getAuthenticationVrid",
+            'username_configured' => !empty($this->distributorUsername),
+            'password_configured' => !empty($this->distributorPassword),
+            'username' => $this->distributorUsername ?: 'NOT_SET'
+        ]);
+
         $response = Http::get("{$this->baseUrl}/getAuthenticationVrid", [
             'distributorUsername' => $this->distributorUsername,
             'distributorPassword' => $this->distributorPassword,
             'username' => 'demo_user', // Arbitrary username for demo access
         ]);
 
+        Log::info('HaynesPro authentication: Response received', [
+            'status' => $response->status(),
+            'successful' => $response->successful(),
+            'headers' => $response->headers(),
+            'raw_body' => $response->body(),
+            'json_body' => $response->json()
+        ]);
+
         if (!$response->successful()) {
             Log::error('HaynesPro authentication failed', [
                 'status' => $response->status(),
-                'body' => $response->json()
+                'body' => $response->json(),
+                'raw_body' => $response->body()
             ]);
             throw new Exception('Failed to authenticate with HaynesPro API');
         }
 
         $data = $response->json();
-        if (!isset($data['vrid'])) {
+        
+        // Handle different status codes from HaynesPro API
+        if (isset($data['statusCode'])) {
+            $statusCode = $data['statusCode'];
+            switch ($statusCode) {
+                case 0:
+                    // Success - continue with normal flow
+                    break;
+                case 1:
+                    Log::error('HaynesPro authentication: Invalid credentials', [
+                        'status_code' => $statusCode,
+                        'username' => $this->distributorUsername,
+                        'message' => 'Distributor username or password is incorrect'
+                    ]);
+                    throw new Exception('HaynesPro authentication failed: Invalid distributor credentials. Please check HAYNESPRO_DISTRIBUTOR_USERNAME and HAYNESPRO_DISTRIBUTOR_PASSWORD in your environment configuration.');
+                case 2:
+                    Log::error('HaynesPro authentication: Account suspended', [
+                        'status_code' => $statusCode,
+                        'username' => $this->distributorUsername
+                    ]);
+                    throw new Exception('HaynesPro authentication failed: Distributor account is suspended or expired.');
+                default:
+                    Log::error('HaynesPro authentication: Unknown status code', [
+                        'status_code' => $statusCode,
+                        'full_response' => $data
+                    ]);
+                    throw new Exception("HaynesPro authentication failed with status code: {$statusCode}");
+            }
+        }
+        
+        if (!isset($data['vrid']) || $data['vrid'] === null) {
+            Log::error('HaynesPro authentication: VRID missing from response', [
+                'response_keys' => array_keys($data ?? []),
+                'full_response' => $data
+            ]);
             throw new Exception('Invalid response from HaynesPro API: missing VRID');
         }
 
