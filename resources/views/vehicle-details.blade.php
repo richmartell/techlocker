@@ -14,7 +14,7 @@
                         </p>
                     </div>
                     <div class="flex gap-2">
-                        <a href="{{ route('vehicle-data') }}">
+                        <a href="{{ route('vehicle-lookup') }}">
                             <flux:button variant="ghost" size="sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
@@ -254,7 +254,7 @@
                             </svg>
                             Refresh Data
                         </flux:button>
-                        <a href="{{ route('vehicle-data') }}">
+                        <a href="{{ route('vehicle-lookup') }}">
                             <flux:button variant="ghost">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
@@ -274,7 +274,7 @@
                 // Create a form and submit it to force refresh
                 const form = document.createElement('form');
                 form.method = 'POST';
-                form.action = '{{ route("vehicle-data.lookup") }}';
+                form.action = '{{ route("vehicle-lookup.search") }}';
                 
                 const csrfToken = document.createElement('input');
                 csrfToken.type = 'hidden';

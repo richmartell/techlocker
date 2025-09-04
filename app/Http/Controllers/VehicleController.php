@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Vehicle;
 use App\Services\DVLA;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,21 @@ class VehicleController extends Controller
     public function __construct(DVLA $dvla)
     {
         $this->dvla = $dvla;
+    }
+
+    /**
+     * Show vehicle details page
+     *
+     * @param string $registration
+     * @return \Illuminate\View\View
+     */
+    public function show(string $registration)
+    {
+        $vehicle = Vehicle::with(['make', 'model'])
+            ->where('registration', $registration)
+            ->firstOrFail();
+        
+        return view('vehicle-details', ['vehicle' => $vehicle]);
     }
 
     /**

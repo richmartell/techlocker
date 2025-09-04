@@ -29,7 +29,7 @@ class VehicleLookupController extends Controller
         ]);
     }
 
-    public function lookup(Request $request)
+    public function search(Request $request)
     {
         try {
             $request->validate([

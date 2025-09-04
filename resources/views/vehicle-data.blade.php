@@ -9,7 +9,7 @@
                     <div class="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
                         <h3 class="text-lg font-semibold mb-4">Find Vehicle Data</h3>
                         
-                        <form method="POST" action="{{ route('vehicle-data.lookup') }}" class="space-y-4">
+                        <form method="POST" action="{{ route('vehicle-lookup.search') }}" class="space-y-4">
                             @csrf
                             <flux:field>
                                 <flux:label for="registration">Registration Number</flux:label>
@@ -179,7 +179,7 @@
                 
                 // Reset button text and form
                 submitButton.textContent = 'Search';
-                form.action = "{{ route('vehicle-data.lookup') }}";
+                form.action = "{{ route('vehicle-lookup.search') }}";
                 form.method = 'POST';
                 registrationInput.required = true;
                 

@@ -5,10 +5,11 @@ use Livewire\Volt\Volt;
 use App\Http\Controllers\DiagnosticsController;
 use App\Http\Controllers\ApiSettingsController;
 use App\Http\Controllers\VehicleLookupController;
-use App\Services\HaynesPro;
-use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\VehicleDataController;
 use App\Http\Controllers\TechnicalInformationController;
 use App\Http\Controllers\HaynesInspectorController;
+use App\Http\Controllers\AdjustmentsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,156 +31,35 @@ Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-// Vehicle Data routes
-Route::get('vehicle-data', [VehicleLookupController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('vehicle-data');
+Route::view('profile', 'profile')
+    ->middleware(['auth'])
+    ->name('profile');
 
-Route::post('vehicle-data/lookup', [VehicleLookupController::class, 'lookup'])
-    ->middleware(['auth', 'verified'])
-    ->name('vehicle-data.lookup');
+Route::get('/diagnostics-ai', [DiagnosticsController::class, 'index'])->middleware(['auth', 'verified'])->name('diagnostics-ai');
 
-// Add Vehicle Details route
-Route::get('vehicle/{registration}', function ($registration) {
-    $vehicle = \App\Models\Vehicle::with(['make', 'model'])
-        ->where('registration', $registration)
-        ->firstOrFail();
-    
-    // Fetch vehicle image from HaynesPro API if car_type_id is available
-    $vehicleImage = null;
-    if ($vehicle->car_type_id) {
-        try {
-            $haynesPro = app(HaynesPro::class);
-            $vehicleDetails = $haynesPro->getVehicleDetails($vehicle->car_type_id);
-            $vehicleImage = $vehicleDetails['image'] ?? null;
-        } catch (\Exception $e) {
-            Log::warning('Failed to fetch vehicle image', [
-                'registration' => $registration,
-                'car_type_id' => $vehicle->car_type_id,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
-    
-    return view('vehicle-details', [
-        'vehicle' => $vehicle,
-        'vehicleImage' => $vehicleImage
-    ]);
-})->middleware(['auth', 'verified'])
-  ->name('vehicle-details');
+Route::post('/diagnostics-ai/submit', [DiagnosticsController::class, 'submit'])->middleware(['auth', 'verified'])->name('diagnostics-ai.submit');
 
-// Add DiagnosticsAI route
-Route::get('vehicle/{registration}/diagnostics', [DiagnosticsController::class, 'show'])
-    ->middleware(['auth', 'verified'])
-    ->name('vehicle-diagnostics');
+Route::get('/vehicle-lookup', [VehicleLookupController::class, 'index'])->middleware(['auth', 'verified'])->name('vehicle-lookup');
 
-// Add DiagnosticsAI message processing route
-Route::post('vehicle/{registration}/diagnostics/process', [DiagnosticsController::class, 'processMessage'])
-    ->middleware(['auth', 'verified'])
-    ->name('process-diagnostics');
+Route::post('/vehicle-lookup/search', [VehicleLookupController::class, 'search'])->middleware(['auth', 'verified'])->name('vehicle-lookup.search');
 
-// Add route to test OpenAI API connection
-Route::get('diagnostics/test-api', [DiagnosticsController::class, 'testApiConnection'])
-    ->middleware(['auth', 'verified'])
-    ->name('test-diagnostics-api');
+Route::post('/vehicle-lookup/save', [VehicleLookupController::class, 'save'])->middleware(['auth', 'verified'])->name('vehicle-lookup.save');
 
-// Add route to fetch models for a make
-Route::get('/vehicle-data/models/{makeId}', function ($makeId) {
-    try {
-        $haynesPro = app(HaynesPro::class);
-        $models = $haynesPro->getVehicleModels($makeId);
-        return response()->json(['models' => $models]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-})->middleware(['auth', 'verified'])->name('vehicle-data.models');
+Route::get('/vehicle/{registration}', [VehicleController::class, 'show'])->middleware(['auth', 'verified'])->name('vehicle-details');
 
-Route::get('/vehicle-data/types/{makeId}', function ($makeId) {
-    try {
-        $haynesPro = app(HaynesPro::class);
-        $types = $haynesPro->getVehicleTypes($makeId);
-        return response()->json(['types' => $types]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-})->middleware(['auth', 'verified'])->name('vehicle-data.types');
+Route::get('/vehicle-data/makes', [VehicleDataController::class, 'makes'])->middleware(['auth', 'verified'])->name('vehicle-data.makes');
 
-Route::get('/vehicle-data/type/{typeId}', function ($typeId) {
-    try {
-        $haynesPro = app(HaynesPro::class);
-        $details = $haynesPro->getVehicleDetails($typeId);
-        
-        if (empty($details)) {
-            return back()->with('error', 'No vehicle details found for the selected type.');
-        }
-        
-        return view('vehicle-type', ['details' => $details]);
-    } catch (\Exception $e) {
-        Log::error('Failed to load vehicle details', [
-            'typeId' => $typeId,
-            'error' => $e->getMessage()
-        ]);
-        return back()->with('error', 'Failed to load vehicle details: ' . $e->getMessage());
-    }
-})->middleware(['auth', 'verified'])->name('vehicle-type');
+Route::get('/vehicle-data/makes/{makeId}/models', [VehicleDataController::class, 'models'])->middleware(['auth', 'verified'])->name('vehicle-data.models');
 
-Route::get('/vehicle-data/adjustments/{carType}/{carTypeGroup}', function ($carType, $carTypeGroup) {
-    try {
-        $haynesPro = app(HaynesPro::class);
-        $adjustments = $haynesPro->getAdjustments($carType, $carTypeGroup);
-        
-        if (empty($adjustments)) {
-            return back()->with('error', 'No adjustments found for the selected type and group.');
-        }
-        
-        return view('vehicle-adjustments', [
-            'adjustments' => $adjustments,
-            'carType' => $carType,
-            'carTypeGroup' => $carTypeGroup
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Failed to load vehicle adjustments', [
-            'carType' => $carType,
-            'carTypeGroup' => $carTypeGroup,
-            'error' => $e->getMessage()
-        ]);
-        return back()->with('error', 'Failed to load vehicle adjustments: ' . $e->getMessage());
-    }
-})->middleware(['auth', 'verified'])->name('vehicle-adjustments');
+Route::get('/vehicle-data/makes/{makeId}/models/{modelId}/types', [VehicleDataController::class, 'types'])->middleware(['auth', 'verified'])->name('vehicle-data.types');
 
-Route::get('/vehicle-information/{carType}/{carTypeGroup}/{subject}', function($carType, $carTypeGroup, $subject){
-    return 1;
-})->middleware(['auth', 'verified'])->name('vehicle-information');
+Route::get('/vehicle-data/type/{typeId}', [VehicleDataController::class, 'typeDetails'])->middleware(['auth', 'verified'])->name('vehicle-type');
 
-Route::get('/vehicle-data/lubricants/{carType}/{carTypeGroup}', function ($carType, $carTypeGroup) {
-    try {
-        $haynesPro = app(HaynesPro::class);
-        $lubricants = $haynesPro->getLubricants($carType, $carTypeGroup);
-        
-        if (empty($lubricants)) {
-            return 'No lubricant information found for this vehicle.';
-        }
-        
-        return view('vehicle-lubricants', [
-            'lubricants' => $lubricants,
-            'carType' => $carType,
-            'carTypeGroup' => $carTypeGroup
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Failed to load vehicle lubricants', [
-            'carType' => $carType,
-            'carTypeGroup' => $carTypeGroup,
-            'error' => $e->getMessage()
-        ]);
-        // Instead of redirecting back, show a view with an error message
-        return view('vehicle-lubricants', [
-            'error' => 'Failed to load vehicle lubricants: ' . $e->getMessage(),
-            'carType' => $carType,
-            'carTypeGroup' => $carTypeGroup,
-            'lubricants' => []
-        ]);
-    }
-})->middleware(['auth', 'verified'])->name('vehicle-lubricants');
+Route::get('/vehicle-data/adjustments/{carType}/{carTypeGroup}', [VehicleDataController::class, 'adjustments'])->middleware(['auth', 'verified'])->name('vehicle-adjustments');
+
+Route::get('/vehicle-information/{carType}/{carTypeGroup}/{subject}', [VehicleDataController::class, 'information'])->middleware(['auth', 'verified'])->name('vehicle-information');
+
+Route::get('/vehicle-data/lubricants/{carType}/{carTypeGroup}', [VehicleDataController::class, 'lubricants'])->middleware(['auth', 'verified'])->name('vehicle-lubricants');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::redirect('settings', 'settings/profile');
@@ -207,342 +87,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Adjustments Routes
     Route::prefix('vehicle/{registration}/adjustments')->group(function () {
-        Route::get('/engine-general', function ($registration) {
-            $vehicle = \App\Models\Vehicle::with(['make', 'model'])
-                ->where('registration', $registration)
-                ->firstOrFail();
-            
-            // Fetch vehicle image and engine adjustments
-            $vehicleImage = null;
-            $engineAdjustments = [];
-            $error = null;
-            
-            if ($vehicle->car_type_id) {
-                try {
-                    $haynesPro = app(\App\Services\HaynesPro::class);
-                    
-                    // Get vehicle image
-                    try {
-                        $vehicleDetails = $haynesPro->getVehicleDetails($vehicle->car_type_id);
-                        $vehicleImage = $vehicleDetails['image'] ?? null;
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::warning('Failed to fetch vehicle image', [
-                            'registration' => $registration,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                    
-                    // Get engine adjustments
-                    $adjustments = $haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'ENGINE');
-                    
-                    // Parse the engine general adjustments
-                    foreach ($adjustments as $adjustment) {
-                        if ($adjustment['name'] === 'Engine (general)' && isset($adjustment['subAdjustments'])) {
-                            foreach ($adjustment['subAdjustments'] as $subAdjustment) {
-                                if ($subAdjustment['name'] === 'Engine' && isset($subAdjustment['subAdjustments'])) {
-                                    $engineAdjustments = $subAdjustment['subAdjustments'];
-                                    break 2;
-                                }
-                            }
-                        }
-                    }
-                    
-                } catch (\Exception $e) {
-                    $error = $e->getMessage();
-                    \Illuminate\Support\Facades\Log::error('Failed to fetch engine adjustments', [
-                        'registration' => $registration,
-                        'car_type_id' => $vehicle->car_type_id,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-            
-            return view('adjustments.engine-general', [
-                'vehicle' => $vehicle,
-                'vehicleImage' => $vehicleImage,
-                'engineAdjustments' => $engineAdjustments,
-                'error' => $error
-            ]);
-        })->name('adjustments.engine-general');
-        
-        Route::get('/engine-specifications', function ($registration) {
-            $vehicle = \App\Models\Vehicle::with(['make', 'model'])
-                ->where('registration', $registration)
-                ->firstOrFail();
-            
-            // Fetch vehicle image and engine specifications
-            $vehicleImage = null;
-            $engineSpecifications = [];
-            $error = null;
-            
-            if ($vehicle->car_type_id) {
-                try {
-                    $haynesPro = app(\App\Services\HaynesPro::class);
-                    
-                    // Get vehicle image
-                    try {
-                        $vehicleDetails = $haynesPro->getVehicleDetails($vehicle->car_type_id);
-                        $vehicleImage = $vehicleDetails['image'] ?? null;
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::warning('Failed to fetch vehicle image', [
-                            'registration' => $registration,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                    
-                    // Get engine adjustments
-                    $adjustments = $haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'ENGINE');
-                    
-                    // Parse the engine specifications
-                    foreach ($adjustments as $adjustment) {
-                        if ($adjustment['name'] === 'Engine (specifications)' && isset($adjustment['subAdjustments'])) {
-                            foreach ($adjustment['subAdjustments'] as $subAdjustment) {
-                                if ($subAdjustment['name'] === 'Engine' && isset($subAdjustment['subAdjustments'])) {
-                                    $engineSpecifications = $subAdjustment['subAdjustments'];
-                                    break 2;
-                                }
-                            }
-                        }
-                    }
-                    
-                } catch (\Exception $e) {
-                    $error = $e->getMessage();
-                    \Illuminate\Support\Facades\Log::error('Failed to fetch engine specifications', [
-                        'registration' => $registration,
-                        'car_type_id' => $vehicle->car_type_id,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-            
-            return view('adjustments.engine-specifications', [
-                'vehicle' => $vehicle,
-                'vehicleImage' => $vehicleImage,
-                'engineSpecifications' => $engineSpecifications,
-                'error' => $error
-            ]);
-        })->name('adjustments.engine-specifications');
-        
-        Route::get('/emissions', function ($registration) {
-            $vehicle = \App\Models\Vehicle::with(['make', 'model'])
-                ->where('registration', $registration)
-                ->firstOrFail();
-            
-            // Fetch vehicle image and emissions data
-            $vehicleImage = null;
-            $emissionsData = [];
-            $error = null;
-            
-            if ($vehicle->car_type_id) {
-                try {
-                    $haynesPro = app(\App\Services\HaynesPro::class);
-                    
-                    // Get vehicle image
-                    try {
-                        $vehicleDetails = $haynesPro->getVehicleDetails($vehicle->car_type_id);
-                        $vehicleImage = $vehicleDetails['image'] ?? null;
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::warning('Failed to fetch vehicle image', [
-                            'registration' => $registration,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                    
-                    // Get emissions adjustments from ENGINE system group
-                    $adjustments = $haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'ENGINE');
-                    
-                    // Find the "Emissions" adjustment group within ENGINE adjustments
-                    foreach ($adjustments as $adjustment) {
-                        if ($adjustment['name'] === 'Emissions' && isset($adjustment['subAdjustments'])) {
-                            $emissionsData = $adjustment['subAdjustments'];
-                            break;
-                        }
-                    }
-                    
-                } catch (\Exception $e) {
-                    $error = $e->getMessage();
-                    \Illuminate\Support\Facades\Log::error('Failed to fetch emissions data', [
-                        'registration' => $registration,
-                        'car_type_id' => $vehicle->car_type_id,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-            
-            return view('adjustments.emissions', [
-                'vehicle' => $vehicle,
-                'vehicleImage' => $vehicleImage,
-                'emissionsData' => $emissionsData,
-                'error' => $error
-            ]);
-        })->name('adjustments.emissions');
-        
-        Route::get('/cooling-system', function ($registration) {
-            $vehicle = \App\Models\Vehicle::with(['make', 'model'])
-                ->where('registration', $registration)
-                ->firstOrFail();
-            
-            // Fetch vehicle image and cooling system data
-            $vehicleImage = null;
-            $coolingSystemData = [];
-            $error = null;
-            
-            if ($vehicle->car_type_id) {
-                try {
-                    $haynesPro = app(\App\Services\HaynesPro::class);
-                    
-                    // Get vehicle image
-                    try {
-                        $vehicleDetails = $haynesPro->getVehicleDetails($vehicle->car_type_id);
-                        $vehicleImage = $vehicleDetails['image'] ?? null;
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::warning('Failed to fetch vehicle image', [
-                            'registration' => $registration,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                    
-                    // Get cooling system adjustments from ENGINE system group
-                    $adjustments = $haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'ENGINE');
-                    
-                    // Find the "Cooling system" adjustment group within ENGINE adjustments
-                    foreach ($adjustments as $adjustment) {
-                        if ($adjustment['name'] === 'Cooling system' && isset($adjustment['subAdjustments'])) {
-                            foreach ($adjustment['subAdjustments'] as $subAdjustment) {
-                                if ($subAdjustment['name'] === 'Engine' && isset($subAdjustment['subAdjustments'])) {
-                                    $coolingSystemData = $subAdjustment['subAdjustments'];
-                                    break 2;
-                                }
-                            }
-                        }
-                    }
-                    
-                } catch (\Exception $e) {
-                    $error = $e->getMessage();
-                    \Illuminate\Support\Facades\Log::error('Failed to fetch cooling system data', [
-                        'registration' => $registration,
-                        'car_type_id' => $vehicle->car_type_id,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-            
-            return view('adjustments.cooling-system', [
-                'vehicle' => $vehicle,
-                'vehicleImage' => $vehicleImage,
-                'coolingSystemData' => $coolingSystemData,
-                'error' => $error
-            ]);
-        })->name('adjustments.cooling-system');
-        
-        Route::get('/electrical', function ($registration) {
-            $vehicle = \App\Models\Vehicle::with(['make', 'model'])
-                ->where('registration', $registration)
-                ->firstOrFail();
-            
-            // Fetch vehicle image and electrical system data
-            $vehicleImage = null;
-            $electricalData = [];
-            $error = null;
-            
-            if ($vehicle->car_type_id) {
-                try {
-                    $haynesPro = app(\App\Services\HaynesPro::class);
-                    
-                    // Get vehicle image
-                    try {
-                        $vehicleDetails = $haynesPro->getVehicleDetails($vehicle->car_type_id);
-                        $vehicleImage = $vehicleDetails['image'] ?? null;
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::warning('Failed to fetch vehicle image', [
-                            'registration' => $registration,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                    
-                    // Get electrical data from QUICKGUIDES system group
-                    $adjustments = $haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'QUICKGUIDES');
-                    
-                    // Look for electrical system in QUICKGUIDES adjustments
-                    foreach ($adjustments as $adjustment) {
-                        if ($adjustment['name'] === 'Electrical' && isset($adjustment['subAdjustments'])) {
-                            $electricalData = $adjustment['subAdjustments'];
-                            break;
-                        }
-                    }
-                    
-                } catch (\Exception $e) {
-                    $error = $e->getMessage();
-                    \Illuminate\Support\Facades\Log::error('Failed to fetch electrical data', [
-                        'registration' => $registration,
-                        'car_type_id' => $vehicle->car_type_id,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-            
-            return view('adjustments.electrical', [
-                'vehicle' => $vehicle,
-                'vehicleImage' => $vehicleImage,
-                'electricalData' => $electricalData,
-                'error' => $error
-            ]);
-        })->name('adjustments.electrical');
-        
-        Route::get('/brakes', function ($registration) {
-            $vehicle = \App\Models\Vehicle::with(['make', 'model'])
-                ->where('registration', $registration)
-                ->firstOrFail();
-            
-            // Fetch vehicle image and brakes data
-            $vehicleImage = null;
-            $brakesData = [];
-            $error = null;
-            
-            if ($vehicle->car_type_id) {
-                try {
-                    $haynesPro = app(\App\Services\HaynesPro::class);
-                    
-                    // Get vehicle image
-                    try {
-                        $vehicleDetails = $haynesPro->getVehicleDetails($vehicle->car_type_id);
-                        $vehicleImage = $vehicleDetails['image'] ?? null;
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::warning('Failed to fetch vehicle image', [
-                            'registration' => $registration,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                    
-                    // Get brakes adjustments from BRAKES system group
-                    $adjustments = $haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'BRAKES');
-                    
-                    // Extract the main "Brakes" section which contains all the brake specifications
-                    foreach ($adjustments as $adjustment) {
-                        if ($adjustment['name'] === 'Brakes' && isset($adjustment['subAdjustments'])) {
-                            $brakesData = $adjustment['subAdjustments'];
-                            break;
-                        }
-                    }
-                    
-                } catch (\Exception $e) {
-                    $error = $e->getMessage();
-                    \Illuminate\Support\Facades\Log::error('Failed to fetch brakes data', [
-                        'registration' => $registration,
-                        'car_type_id' => $vehicle->car_type_id,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-            
-            return view('adjustments.brakes', [
-                'vehicle' => $vehicle,
-                'vehicleImage' => $vehicleImage,
-                'brakesData' => $brakesData,
-                'error' => $error
-            ]);
-        })->name('adjustments.brakes');
+        Route::get('/engine-general', [AdjustmentsController::class, 'engineGeneral'])->name('adjustments.engine-general');
+        Route::get('/engine-specifications', [AdjustmentsController::class, 'engineSpecifications'])->name('adjustments.engine-specifications');
+        Route::get('/emissions', [AdjustmentsController::class, 'emissions'])->name('adjustments.emissions');
+        Route::get('/cooling-system', [AdjustmentsController::class, 'coolingSystem'])->name('adjustments.cooling-system');
+        Route::get('/electrical', [AdjustmentsController::class, 'electrical'])->name('adjustments.electrical');
+        Route::get('/brakes', [AdjustmentsController::class, 'brakes'])->name('adjustments.brakes');
+        Route::get('/steering', [AdjustmentsController::class, 'steering'])->name('adjustments.steering');
+        Route::get('/wheels-tyres', [AdjustmentsController::class, 'wheelsTyres'])->name('adjustments.wheels-tyres');
     });
+    
+    // Vehicle Diagnostics Route
+    Route::get('/vehicle/{registration}/diagnostics', [DiagnosticsController::class, 'show'])->middleware(['auth', 'verified'])->name('vehicle-diagnostics');
     
     // Haynes Inspector Routes
     Route::prefix('vehicle/{registration}/haynes-inspector')->group(function () {
