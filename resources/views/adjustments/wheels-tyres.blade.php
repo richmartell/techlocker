@@ -24,7 +24,7 @@
                 <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Wheels and Tyres</h1>
             </div>
             <p class="text-zinc-600 dark:text-zinc-400">
-                Wheel and tyre specifications for {{ $vehicle->make?->name ?? 'Unknown' }} {{ $vehicle->model?->name ?? 'Unknown' }} ({{ $vehicle->registration }})
+                Wheels and tyres specifications for {{ $vehicle->make?->name ?? 'Unknown' }} {{ $vehicle->model?->name ?? 'Unknown' }} ({{ $vehicle->registration }})
             </p>
         </div>
 
@@ -46,6 +46,23 @@
             <!-- Wheels and Tyres Sections -->
             <div class="space-y-6">
                 @foreach($wheelsData as $section)
+                    @php
+                        $name = strtolower($section['name']);
+                        $isWheelsRelated = (
+                            stripos($name, 'wheel') !== false ||
+                            stripos($name, 'tyre') !== false ||
+                            stripos($name, 'tire') !== false ||
+                            stripos($name, 'rim') !== false
+                        ) && (
+                            stripos($name, 'wheelbase') === false &&
+                            stripos($name, 'alignment') === false &&
+                            stripos($name, 'suspension') === false &&
+                            stripos($name, 'castor') === false &&
+                            stripos($name, 'camber') === false &&
+                            stripos($name, 'toe') === false
+                        );
+                    @endphp
+                    @if($isWheelsRelated)
                     <div class="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
                         <!-- Section Header -->
                         <div class="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
@@ -201,6 +218,7 @@
                             @endif
                         </div>
                     </div>
+                    @endif
                 @endforeach
             </div>
         @else
@@ -224,7 +242,7 @@
                     <p class="text-sm text-blue-800 dark:text-blue-200">
                         @if(!empty($wheelsData))
                             <strong>Live Data:</strong> Wheels and tyres specifications are dynamically fetched from the HaynesPro API 
-                            based on this vehicle's car type ID ({{ $vehicle->car_type_id ?? 'Not available' }}). Data includes wheel sizes, tyre specifications, and pressure requirements.
+                            based on this vehicle's car type ID ({{ $vehicle->car_type_id ?? 'Not available' }}). Data includes wheel sizes, tyre specifications, rim dimensions, and pressure settings.
                         @else
                             <strong>No Data Available:</strong> Wheels and tyres data could not be loaded from the HaynesPro API. 
                             This may be due to missing vehicle identification data or API connectivity issues.
@@ -240,28 +258,28 @@
                 <h3 class="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-3">Wheels & Tyres Terms</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
                     <div class="flex gap-2">
-                        <span class="font-medium text-zinc-700 dark:text-zinc-300">inch:</span>
-                        <span class="text-zinc-600 dark:text-zinc-400">Wheel diameter measurement</span>
+                        <span class="font-medium text-zinc-700 dark:text-zinc-300">mm:</span>
+                        <span class="text-zinc-600 dark:text-zinc-400">Millimeters (wheel diameter)</span>
                     </div>
                     <div class="flex gap-2">
-                        <span class="font-medium text-zinc-700 dark:text-zinc-300">J:</span>
-                        <span class="text-zinc-600 dark:text-zinc-400">Rim width designation</span>
-                    </div>
-                    <div class="flex gap-2">
-                        <span class="font-medium text-zinc-700 dark:text-zinc-300">ET:</span>
-                        <span class="text-zinc-600 dark:text-zinc-400">Offset (Einpresstiefe)</span>
-                    </div>
-                    <div class="flex gap-2">
-                        <span class="font-medium text-zinc-700 dark:text-zinc-300">PCD:</span>
-                        <span class="text-zinc-600 dark:text-zinc-400">Pitch Circle Diameter</span>
+                        <span class="font-medium text-zinc-700 dark:text-zinc-300">in:</span>
+                        <span class="text-zinc-600 dark:text-zinc-400">Inches (wheel size)</span>
                     </div>
                     <div class="flex gap-2">
                         <span class="font-medium text-zinc-700 dark:text-zinc-300">bar/psi:</span>
                         <span class="text-zinc-600 dark:text-zinc-400">Tyre pressure units</span>
                     </div>
                     <div class="flex gap-2">
-                        <span class="font-medium text-zinc-700 dark:text-zinc-300">Load index:</span>
-                        <span class="text-zinc-600 dark:text-zinc-400">Maximum tyre load rating</span>
+                        <span class="font-medium text-zinc-700 dark:text-zinc-300">Offset:</span>
+                        <span class="text-zinc-600 dark:text-zinc-400">Wheel mounting position</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="font-medium text-zinc-700 dark:text-zinc-300">PCD:</span>
+                        <span class="text-zinc-600 dark:text-zinc-400">Pitch Circle Diameter</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="font-medium text-zinc-700 dark:text-zinc-300">Load Index:</span>
+                        <span class="text-zinc-600 dark:text-zinc-400">Tyre weight capacity</span>
                     </div>
                 </div>
             </div>

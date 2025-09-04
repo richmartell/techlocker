@@ -362,75 +362,12 @@ class AdjustmentsController extends Controller
             try {
                 $vehicleImage = $this->getVehicleImage($registration, $vehicle->car_type_id);
 
-                // Search for wheels/tyres specific data across multiple system groups
-                $searchGroups = ['WHEELS', 'EXTERIOR'];
-
-                foreach ($searchGroups as $groupName) {
-                    try {
-                        $adjustments = $this->haynesPro->getAdjustmentsV7($vehicle->car_type_id, $groupName);
-
-                        foreach ($adjustments as $section) {
-                            // Look for specific wheel/tyre keywords but exclude general suspension terms
-                            $isWheelsRelated = false;
-                            $name = strtolower($section['name']);
-
-                            // Specific wheel/tyre keywords
-                            if (stripos($name, 'wheel') !== false ||
-                                stripos($name, 'tyre') !== false ||
-                                stripos($name, 'tire') !== false ||
-                                stripos($name, 'rim') !== false) {
-
-                                // Exclude suspension-related terms that might contain "wheel"
-                                if (stripos($name, 'wheelbase') === false &&
-                                    stripos($name, 'alignment') === false &&
-                                    stripos($name, 'suspension') === false &&
-                                    stripos($name, 'castor') === false &&
-                                    stripos($name, 'camber') === false &&
-                                    stripos($name, 'toe') === false) {
-                                    $isWheelsRelated = true;
-                                }
-                            }
-
-                            // Also check subsection names with same logic
-                            if (!$isWheelsRelated && isset($section['subAdjustments'])) {
-                                foreach ($section['subAdjustments'] as $subsection) {
-                                    $subName = strtolower($subsection['name']);
-                                    if ((stripos($subName, 'wheel') !== false ||
-                                         stripos($subName, 'tyre') !== false ||
-                                         stripos($subName, 'tire') !== false ||
-                                         stripos($subName, 'rim') !== false) &&
-                                        stripos($subName, 'wheelbase') === false &&
-                                        stripos($subName, 'alignment') === false &&
-                                        stripos($subName, 'suspension') === false &&
-                                        stripos($subName, 'castor') === false &&
-                                        stripos($subName, 'camber') === false &&
-                                        stripos($subName, 'toe') === false) {
-                                        $isWheelsRelated = true;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if ($isWheelsRelated) {
-                                $wheelsData[] = $section;
-                            }
-                        }
-
-                    } catch (\Exception $e) {
-                        Log::info("Failed to get wheels data from {$groupName} group", ['error' => $e->getMessage()]);
-                    }
-                }
-
-                // Log what we found for debugging
-                Log::info('Wheels/tyres data search results', [
-                    'registration' => $registration,
-                    'sections_found' => count($wheelsData),
-                    'section_names' => array_map(function($section) { return $section['name']; }, $wheelsData)
-                ]);
+                // Get all steering/suspension adjustments from STEERING system group
+                $wheelsData = $this->haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'STEERING');
 
             } catch (\Exception $e) {
                 $error = $e->getMessage();
-                Log::error('Failed to fetch wheels/tyres data', [
+                Log::error('Failed to fetch steering data', [
                     'registration' => $registration,
                     'car_type_id' => $vehicle->car_type_id,
                     'error' => $e->getMessage()

@@ -46,6 +46,7 @@
             <!-- Steering System Sections -->
             <div class="space-y-6">
                 @foreach($steeringData as $section)
+                    @if(strtolower($section['name']) !== 'wheels and tyres')
                     <div class="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
                         <!-- Section Header -->
                         <div class="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
@@ -201,6 +202,7 @@
                             @endif
                         </div>
                     </div>
+                    @endif
                 @endforeach
             </div>
         @else
