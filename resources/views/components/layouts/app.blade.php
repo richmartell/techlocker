@@ -75,12 +75,12 @@
                         <flux:navlist.item href="#" wire:navigate>Maintenance forms</flux:navlist.item>
                     </flux:navlist.group>
                     <flux:navlist.group expandable :expanded="request()->routeIs('adjustments.*')" heading="Adjustments" icon="cog-8-tooth">
-                                                            <flux:navlist.item :href="route('adjustments.engine-general', $vehicle->registration)" :current="request()->routeIs('adjustments.engine-general')" wire:navigate>Engine (general)</flux:navlist.item>
-                                                            <flux:navlist.item :href="route('adjustments.engine-specifications', $vehicle->registration)" :current="request()->routeIs('adjustments.engine-specifications')" wire:navigate>Engine (specifications)</flux:navlist.item>
-                                                            <flux:navlist.item :href="route('adjustments.emissions', $vehicle->registration)" :current="request()->routeIs('adjustments.emissions')" wire:navigate>Emissions</flux:navlist.item>
-                                                            <flux:navlist.item :href="route('adjustments.cooling-system', $vehicle->registration)" :current="request()->routeIs('adjustments.cooling-system')" wire:navigate>Cooling system</flux:navlist.item>
-                                                            <flux:navlist.item :href="route('adjustments.electrical', $vehicle->registration)" :current="request()->routeIs('adjustments.electrical')" wire:navigate>Electrical</flux:navlist.item>
-                                                            <flux:navlist.item :href="route('adjustments.brakes', $vehicle->registration)" :current="request()->routeIs('adjustments.brakes')" wire:navigate>Brakes</flux:navlist.item>
+                        <flux:navlist.item :href="route('adjustments.engine-general', $vehicle->registration)" :current="request()->routeIs('adjustments.engine-general')" wire:navigate>Engine (general)</flux:navlist.item>
+                        <flux:navlist.item :href="route('adjustments.engine-specifications', $vehicle->registration)" :current="request()->routeIs('adjustments.engine-specifications')" wire:navigate>Engine (specifications)</flux:navlist.item>
+                        <flux:navlist.item :href="route('adjustments.emissions', $vehicle->registration)" :current="request()->routeIs('adjustments.emissions')" wire:navigate>Emissions</flux:navlist.item>
+                        <flux:navlist.item :href="route('adjustments.cooling-system', $vehicle->registration)" :current="request()->routeIs('adjustments.cooling-system')" wire:navigate>Cooling system</flux:navlist.item>
+                        <flux:navlist.item :href="route('adjustments.electrical', $vehicle->registration)" :current="request()->routeIs('adjustments.electrical')" wire:navigate>Electrical</flux:navlist.item>
+                        <flux:navlist.item :href="route('adjustments.brakes', $vehicle->registration)" :current="request()->routeIs('adjustments.brakes')" wire:navigate>Brakes</flux:navlist.item>
                         <flux:navlist.item :href="route('adjustments.steering', $vehicle->registration)" :current="request()->routeIs('adjustments.steering')" wire:navigate>Steering, suspension and wheel alignment</flux:navlist.item>
                         <flux:navlist.item :href="route('adjustments.wheels-tyres', $vehicle->registration)" :current="request()->routeIs('adjustments.wheels-tyres')" wire:navigate>Wheels and tyres</flux:navlist.item>
                         <flux:navlist.item :href="route('adjustments.capacities', $vehicle->registration)" :current="request()->routeIs('adjustments.capacities')" wire:navigate>Capacities</flux:navlist.item>
@@ -134,7 +134,7 @@
                                                                     <flux:navlist.item :href="route('adjustments.brakes', $vehicle->registration)" :current="request()->routeIs('adjustments.brakes')" wire:navigate>Brakes</flux:navlist.item>
                                 <flux:navlist.item :href="route('adjustments.steering', $vehicle->registration)" :current="request()->routeIs('adjustments.steering')" wire:navigate>Steering, suspension and wheel alignment</flux:navlist.item>
                                 <flux:navlist.item :href="route('adjustments.wheels-tyres', $vehicle->registration)" :current="request()->routeIs('adjustments.wheels-tyres')" wire:navigate>Wheels and tyres</flux:navlist.item>
-                                <flux:navlist.item href="#" wire:navigate>Capacities</flux:navlist.item>
+                                <flux:navlist.item :href="route('adjustments.capacities', $vehicle->registration)" :current="request()->routeIs('adjustments.capacities')" wire:navigate>Capacities</flux:navlist.item>
                                 <flux:navlist.item href="#" wire:navigate>Torque settings</flux:navlist.item>
                             </flux:navlist.group>
                             <flux:navlist.group expandable :expanded="request()->routeIs('technical-information.*')" heading="Repair Data" icon="cog-6-tooth">
