@@ -390,6 +390,86 @@ class AdjustmentsController extends Controller
     }
 
     /**
+     * Capacities adjustments
+     */
+    public function capacities($registration)
+    {
+        $vehicle = $this->getVehicle($registration);
+        $vehicleImage = null;
+        $capacitiesData = [];
+        $error = null;
+
+        if ($vehicle->car_type_id) {
+            try {
+                $vehicleImage = $this->getVehicleImage($registration, $vehicle->car_type_id);
+
+                // Get all adjustments from cache (this is much more efficient than the old API calls)
+                $adjustments = $this->haynesPro->getAllAdjustmentsWithCache($vehicle->car_type_id);
+
+                // Find the "Capacities" adjustment group and process its structure
+                foreach ($adjustments as $adjustment) {
+                    if ($adjustment['name'] === 'Capacities' && isset($adjustment['subAdjustments'])) {
+                        // Process the capacities data to create sections with flattened items
+                        $capacitiesData = $this->processCapacitiesData($adjustment['subAdjustments']);
+                        break;
+                    }
+                }
+
+            } catch (\Exception $e) {
+                $error = $e->getMessage();
+                Log::error('Failed to fetch capacities data', [
+                    'registration' => $registration,
+                    'car_type_id' => $vehicle->car_type_id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return view('adjustments.capacities', [
+            'vehicle' => $vehicle,
+            'vehicleImage' => $vehicleImage,
+            'capacitiesData' => $capacitiesData,
+            'error' => $error
+        ]);
+    }
+
+    /**
+     * Process capacities data to handle complex nested structures with images
+     */
+    private function processCapacitiesData($sections)
+    {
+        $processedData = [];
+        
+        foreach ($sections as $section) {
+            $processedSection = [
+                'section_name' => $section['name'],
+                'items' => []
+            ];
+            
+            if (isset($section['subAdjustments']) && !empty($section['subAdjustments'])) {
+                foreach ($section['subAdjustments'] as $item) {
+                    // Add the main item
+                    $processedSection['items'][] = $item;
+                    
+                    // If this item has sub-adjustments (like transmission details), add them as separate items
+                    if (isset($item['subAdjustments']) && !empty($item['subAdjustments'])) {
+                        foreach ($item['subAdjustments'] as $subItem) {
+                            // Mark as sub-item and add parent context
+                            $subItem['is_sub_item'] = true;
+                            $subItem['parent_name'] = $item['name'] ?? null;
+                            $processedSection['items'][] = $subItem;
+                        }
+                    }
+                }
+            }
+            
+            $processedData[] = $processedSection;
+        }
+        
+        return $processedData;
+    }
+
+    /**
      * Steering, suspension and wheel alignment adjustments
      */
     public function steering($registration)

@@ -83,7 +83,7 @@
                                                             <flux:navlist.item :href="route('adjustments.brakes', $vehicle->registration)" :current="request()->routeIs('adjustments.brakes')" wire:navigate>Brakes</flux:navlist.item>
                         <flux:navlist.item :href="route('adjustments.steering', $vehicle->registration)" :current="request()->routeIs('adjustments.steering')" wire:navigate>Steering, suspension and wheel alignment</flux:navlist.item>
                         <flux:navlist.item :href="route('adjustments.wheels-tyres', $vehicle->registration)" :current="request()->routeIs('adjustments.wheels-tyres')" wire:navigate>Wheels and tyres</flux:navlist.item>
-                        <flux:navlist.item href="#" wire:navigate>Capacities</flux:navlist.item>
+                        <flux:navlist.item :href="route('adjustments.capacities', $vehicle->registration)" :current="request()->routeIs('adjustments.capacities')" wire:navigate>Capacities</flux:navlist.item>
                         <flux:navlist.item href="#" wire:navigate>Torque settings</flux:navlist.item>
                     </flux:navlist.group>
                     <flux:navlist.group expandable :expanded="request()->routeIs('technical-information.*')" heading="Repair Data" icon="cog-6-tooth">

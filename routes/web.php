@@ -95,6 +95,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/brakes', [AdjustmentsController::class, 'brakes'])->name('adjustments.brakes');
         Route::get('/steering', [AdjustmentsController::class, 'steering'])->name('adjustments.steering');
         Route::get('/wheels-tyres', [AdjustmentsController::class, 'wheelsTyres'])->name('adjustments.wheels-tyres');
+        Route::get('/capacities', [AdjustmentsController::class, 'capacities'])->name('adjustments.capacities');
     });
     
     // Vehicle Diagnostics Route
