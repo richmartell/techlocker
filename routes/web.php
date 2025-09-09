@@ -96,6 +96,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/steering', [AdjustmentsController::class, 'steering'])->name('adjustments.steering');
         Route::get('/wheels-tyres', [AdjustmentsController::class, 'wheelsTyres'])->name('adjustments.wheels-tyres');
         Route::get('/capacities', [AdjustmentsController::class, 'capacities'])->name('adjustments.capacities');
+        Route::get('/torque-settings', [AdjustmentsController::class, 'torqueSettings'])->name('adjustments.torque-settings');
     });
     
     // Vehicle Diagnostics Route
