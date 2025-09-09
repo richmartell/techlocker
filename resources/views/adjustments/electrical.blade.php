@@ -44,106 +44,69 @@
 
         @if(!empty($electricalData))
             <!-- Electrical System Sections -->
-            <div class="space-y-6">
-                @foreach($electricalData as $section)
-                    <div class="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
-                        <!-- Section Header -->
-                        <div class="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
-                            <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                {{ $section['name'] }}
-                                @if($section['remark'])
-                                    <span class="text-sm text-zinc-500 font-normal ml-2">({{ $section['remark'] }})</span>
-                                @endif
-                            </h2>
-                        </div>
-                        
-                        <!-- Section Content -->
-                        <div class="p-6">
-                            @if(isset($section['subAdjustments']) && !empty($section['subAdjustments']))
-                                <!-- Table for specifications -->
-                                <div class="overflow-x-auto">
-                                    <table class="w-full">
-                                        <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                                            @foreach($section['subAdjustments'] as $spec)
-                                                <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                                                    <td class="px-4 py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100 w-1/2">
-                                                        {{ $spec['name'] }}
-                                                        @if($spec['remark'])
-                                                            <div class="text-xs text-zinc-500 mt-1">{{ $spec['remark'] }}</div>
-                                                        @endif
-                                                    </td>
-                                                    <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                                                        <div class="flex items-start gap-4">
-                                                            <div class="flex-1">
-                                                                @if($spec['value'])
-                                                                    <span class="font-medium">{{ $spec['value'] }}</span>
-                                                                    @if($spec['unit'])
-                                                                        <span class="text-zinc-500 ml-1">{{ $spec['unit'] }}</span>
-                                                                    @endif
-                                                                @else
-                                                                    <span class="text-zinc-400">-</span>
-                                                                @endif
-                                                            </div>
-                                                            
-                                                            @if($spec['imageName'])
-                                                                <div class="flex-shrink-0">
-                                                                    <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-2 border border-zinc-200 dark:border-zinc-700">
-                                                                        <img 
-                                                                            src="{{ $spec['imageName'] }}" 
-                                                                            alt="{{ $spec['name'] }}" 
-                                                                            class="w-24 h-24 object-contain rounded cursor-pointer hover:scale-105 transition-transform"
-                                                                            onclick="openImageModal('{{ addslashes($spec['imageName']) }}', '{{ addslashes($spec['name']) }}')"
-                                                                        >
-                                                                        <p class="text-xs text-center text-zinc-500 mt-1">
-                                                                            <flux:icon.magnifying-glass-plus class="w-3 h-3 inline mr-1" />
-                                                                            Click to enlarge
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            @elseif($section['value'] || $section['unit'])
-                                <!-- Single value specification -->
-                                <div class="flex items-center gap-4">
-                                    <div class="flex-1">
-                                        @if($section['value'])
-                                            <span class="font-medium text-zinc-900 dark:text-zinc-100">{{ $section['value'] }}</span>
-                                        @endif
-                                        @if($section['unit'])
-                                            <span class="text-zinc-500">{{ $section['unit'] }}</span>
-                                        @endif
-                                    </div>
-                                    
-                                    @if($section['imageName'])
-                                        <div class="flex-shrink-0">
-                                            <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 border border-zinc-200 dark:border-zinc-700">
-                                                <img 
-                                                    src="{{ $section['imageName'] }}" 
-                                                    alt="{{ $section['name'] }}" 
-                                                    class="w-32 h-32 object-contain rounded cursor-pointer hover:scale-105 transition-transform"
-                                                    onclick="openImageModal('{{ addslashes($section['imageName']) }}', '{{ addslashes($section['name']) }}')"
-                                                >
-                                                <p class="text-xs text-center text-zinc-500 mt-2">
-                                                    <flux:icon.magnifying-glass-plus class="w-3 h-3 inline mr-1" />
-                                                    Click to enlarge image
-                                                </p>
+            <!-- Electrical System Specifications -->
+            <div class="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+                <div class="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">
+                    <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Electrical System Specifications</h2>
+                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                        Live electrical system data from HaynesPro API
+                    </p>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                            @foreach($electricalData as $spec)
+                                <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                                    <td class="px-6 py-4 text-sm font-medium text-zinc-900 dark:text-zinc-100 bg-zinc-50 dark:bg-zinc-800/50 w-1/3 {{ isset($spec['is_sub_item']) && $spec['is_sub_item'] ? 'pl-12' : '' }}">
+                                        @if(isset($spec['is_sub_item']) && $spec['is_sub_item'])
+                                            <div class="flex items-center">
+                                                <flux:icon.arrow-turn-down-right class="w-4 h-4 text-zinc-400 mr-2 flex-shrink-0" />
+                                                <span>{{ $spec['name'] ?? 'Unknown' }}</span>
                                             </div>
+                                        @else
+                                            {{ $spec['name'] ?? 'Unknown' }}
+                                        @endif
+                                        @if($spec['remark'])
+                                            <div class="text-xs text-zinc-500 mt-1">{{ $spec['remark'] }}</div>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
+                                        <div class="flex items-start gap-4">
+                                            <div class="flex-1">
+                                                @if($spec['value'])
+                                                    <span class="font-medium">{{ $spec['value'] }}</span>
+                                                    @if($spec['unit'])
+                                                        <span class="text-zinc-500 ml-1">{{ $spec['unit'] }}</span>
+                                                    @endif
+                                                @else
+                                                    <span class="text-zinc-400">-</span>
+                                                @endif
+                                            </div>
+                                            
+                                            @if($spec['imageName'])
+                                                <div class="flex-shrink-0">
+                                                    <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-2 border border-zinc-200 dark:border-zinc-700">
+                                                        <img 
+                                                            src="{{ $spec['imageName'] }}" 
+                                                            alt="{{ $spec['name'] }}" 
+                                                            class="w-24 h-24 object-contain rounded cursor-pointer hover:scale-105 transition-transform"
+                                                            onclick="openImageModal('{{ addslashes($spec['imageName']) }}', '{{ addslashes($spec['name']) }}')"
+                                                        >
+                                                        <p class="text-xs text-center text-zinc-500 mt-1">
+                                                            <flux:icon.magnifying-glass-plus class="w-3 h-3 inline mr-1" />
+                                                            Click to enlarge
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            @endif
                                         </div>
-                                    @endif
-                                </div>
-                            @else
-                                <!-- No specific data message -->
-                                <p class="text-zinc-500 text-sm">No specific data available for this section.</p>
-                            @endif
-                        </div>
-                    </div>
-                @endforeach
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
         @else
             <!-- No Data Available -->

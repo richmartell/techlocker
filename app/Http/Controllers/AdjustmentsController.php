@@ -58,7 +58,7 @@ class AdjustmentsController extends Controller
                 $vehicleImage = $this->getVehicleImage($registration, $vehicle->car_type_id);
 
                 // Get engine adjustments
-                $adjustments = $this->haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'ENGINE');
+                $adjustments = $this->haynesPro->getAdjustmentsBySystemGroup($vehicle->car_type_id, 'ENGINE');
 
                 // Parse the engine general adjustments
                 foreach ($adjustments as $adjustment) {
@@ -105,7 +105,7 @@ class AdjustmentsController extends Controller
                 $vehicleImage = $this->getVehicleImage($registration, $vehicle->car_type_id);
 
                 // Get engine adjustments
-                $adjustments = $this->haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'ENGINE');
+                $adjustments = $this->haynesPro->getAdjustmentsBySystemGroup($vehicle->car_type_id, 'ENGINE');
 
                 // Parse the engine specifications
                 foreach ($adjustments as $adjustment) {
@@ -151,13 +151,22 @@ class AdjustmentsController extends Controller
             try {
                 $vehicleImage = $this->getVehicleImage($registration, $vehicle->car_type_id);
 
-                // Get emissions adjustments from ENGINE system group
-                $adjustments = $this->haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'ENGINE');
+                // Get all adjustments from cache (this is much more efficient than the old API calls)
+                $adjustments = $this->haynesPro->getAllAdjustmentsWithCache($vehicle->car_type_id);
 
-                // Find the "Emissions" adjustment group within ENGINE adjustments
+                // Find the "Emissions" adjustment group and process its structure
                 foreach ($adjustments as $adjustment) {
                     if ($adjustment['name'] === 'Emissions' && isset($adjustment['subAdjustments'])) {
-                        $emissionsData = $adjustment['subAdjustments'];
+                        // Parse the nested emissions structure
+                        foreach ($adjustment['subAdjustments'] as $section) {
+                            if (isset($section['subAdjustments'])) {
+                                $emissionsData[] = [
+                                    'section_name' => $section['name'],
+                                    'visible' => $section['visible'] ?? true,
+                                    'items' => $section['subAdjustments']
+                                ];
+                            }
+                        }
                         break;
                     }
                 }
@@ -194,15 +203,16 @@ class AdjustmentsController extends Controller
             try {
                 $vehicleImage = $this->getVehicleImage($registration, $vehicle->car_type_id);
 
-                // Get cooling system adjustments from ENGINE system group
-                $adjustments = $this->haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'ENGINE');
+                // Get all adjustments from cache (this is much more efficient than the old API calls)
+                $adjustments = $this->haynesPro->getAllAdjustmentsWithCache($vehicle->car_type_id);
 
-                // Find the "Cooling system" adjustment group within ENGINE adjustments
+                // Find the "Cooling system" adjustment group and extract Engine section
                 foreach ($adjustments as $adjustment) {
                     if ($adjustment['name'] === 'Cooling system' && isset($adjustment['subAdjustments'])) {
-                        foreach ($adjustment['subAdjustments'] as $subAdjustment) {
-                            if ($subAdjustment['name'] === 'Engine' && isset($subAdjustment['subAdjustments'])) {
-                                $coolingSystemData = $subAdjustment['subAdjustments'];
+                        foreach ($adjustment['subAdjustments'] as $section) {
+                            if ($section['name'] === 'Engine' && isset($section['subAdjustments'])) {
+                                // Extract the items directly for the view (view expects array of items)
+                                $coolingSystemData = $section['subAdjustments'];
                                 break 2;
                             }
                         }
@@ -241,14 +251,19 @@ class AdjustmentsController extends Controller
             try {
                 $vehicleImage = $this->getVehicleImage($registration, $vehicle->car_type_id);
 
-                // Get electrical data from QUICKGUIDES system group
-                $adjustments = $this->haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'QUICKGUIDES');
+                // Get all adjustments from cache (this is much more efficient than the old API calls)
+                $adjustments = $this->haynesPro->getAllAdjustmentsWithCache($vehicle->car_type_id);
 
-                // Look for electrical system in QUICKGUIDES adjustments
+                // Find the "Electrical" adjustment group and extract Electrical system section
                 foreach ($adjustments as $adjustment) {
                     if ($adjustment['name'] === 'Electrical' && isset($adjustment['subAdjustments'])) {
-                        $electricalData = $adjustment['subAdjustments'];
-                        break;
+                        foreach ($adjustment['subAdjustments'] as $section) {
+                            if ($section['name'] === 'Electrical system' && isset($section['subAdjustments'])) {
+                                // Process the electrical data to flatten nested items for display
+                                $electricalData = $this->processElectricalData($section['subAdjustments']);
+                                break 2;
+                            }
+                        }
                     }
                 }
 
@@ -271,6 +286,30 @@ class AdjustmentsController extends Controller
     }
 
     /**
+     * Process electrical data to handle nested battery specifications and locations
+     */
+    private function processElectricalData($items)
+    {
+        $processedData = [];
+        
+        foreach ($items as $item) {
+            // Add the main item
+            $processedData[] = $item;
+            
+            // If the item has sub-adjustments (like battery details), add them as separate items
+            if (isset($item['subAdjustments']) && !empty($item['subAdjustments'])) {
+                foreach ($item['subAdjustments'] as $subItem) {
+                    // Indent sub-items for visual hierarchy
+                    $subItem['is_sub_item'] = true;
+                    $processedData[] = $subItem;
+                }
+            }
+        }
+        
+        return $processedData;
+    }
+
+    /**
      * Brakes adjustments
      */
     public function brakes($registration)
@@ -284,13 +323,14 @@ class AdjustmentsController extends Controller
             try {
                 $vehicleImage = $this->getVehicleImage($registration, $vehicle->car_type_id);
 
-                // Get brakes adjustments from BRAKES system group
-                $adjustments = $this->haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'BRAKES');
+                // Get all adjustments from cache (this is much more efficient than the old API calls)
+                $adjustments = $this->haynesPro->getAllAdjustmentsWithCache($vehicle->car_type_id);
 
-                // Extract the main "Brakes" section which contains all the brake specifications
+                // Find the "Brakes" adjustment group and process its structure
                 foreach ($adjustments as $adjustment) {
                     if ($adjustment['name'] === 'Brakes' && isset($adjustment['subAdjustments'])) {
-                        $brakesData = $adjustment['subAdjustments'];
+                        // Process the brakes data to create sections with flattened items
+                        $brakesData = $this->processBrakesData($adjustment['subAdjustments']);
                         break;
                     }
                 }
@@ -314,6 +354,42 @@ class AdjustmentsController extends Controller
     }
 
     /**
+     * Process brakes data to handle complex nested structures and create sections
+     */
+    private function processBrakesData($sections)
+    {
+        $processedData = [];
+        
+        foreach ($sections as $section) {
+            $processedSection = [
+                'section_name' => $section['name'],
+                'items' => []
+            ];
+            
+            if (isset($section['subAdjustments']) && !empty($section['subAdjustments'])) {
+                foreach ($section['subAdjustments'] as $item) {
+                    // Add the main item
+                    $processedSection['items'][] = $item;
+                    
+                    // If this item has sub-adjustments (like rear disc brakes), add them as separate items
+                    if (isset($item['subAdjustments']) && !empty($item['subAdjustments'])) {
+                        foreach ($item['subAdjustments'] as $subItem) {
+                            // Mark as sub-item and add parent context
+                            $subItem['is_sub_item'] = true;
+                            $subItem['parent_remark'] = $item['remark'] ?? null;
+                            $processedSection['items'][] = $subItem;
+                        }
+                    }
+                }
+            }
+            
+            $processedData[] = $processedSection;
+        }
+        
+        return $processedData;
+    }
+
+    /**
      * Steering, suspension and wheel alignment adjustments
      */
     public function steering($registration)
@@ -328,7 +404,7 @@ class AdjustmentsController extends Controller
                 $vehicleImage = $this->getVehicleImage($registration, $vehicle->car_type_id);
 
                 // Get all steering/suspension adjustments from STEERING system group
-                $steeringData = $this->haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'STEERING');
+                $steeringData = $this->haynesPro->getAdjustmentsBySystemGroup($vehicle->car_type_id, 'STEERING');
 
             } catch (\Exception $e) {
                 $error = $e->getMessage();
@@ -363,7 +439,7 @@ class AdjustmentsController extends Controller
                 $vehicleImage = $this->getVehicleImage($registration, $vehicle->car_type_id);
 
                 // Get all steering/suspension adjustments from STEERING system group
-                $wheelsData = $this->haynesPro->getAdjustmentsV7($vehicle->car_type_id, 'STEERING');
+                $wheelsData = $this->haynesPro->getAdjustmentsBySystemGroup($vehicle->car_type_id, 'STEERING');
 
             } catch (\Exception $e) {
                 $error = $e->getMessage();

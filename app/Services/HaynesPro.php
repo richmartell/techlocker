@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use App\Models\HaynesProVehicle;
 use Exception;
 
 class HaynesPro
@@ -910,6 +911,148 @@ class HaynesPro
             
             throw $e;
         }
+    }
+
+    /**
+     * Get ALL adjustments for a vehicle by carTypeId with caching.
+     * This method fetches all adjustments data and caches it for 24 hours.
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @param bool $includeSmartLinks Whether to include smart links
+     * @param bool $includeGenarts Whether to include general articles
+     * @return array The complete adjustments data
+     * @throws Exception If the API request fails
+     */
+    public function getAllAdjustmentsWithCache(int $carTypeId, bool $includeSmartLinks = true, bool $includeGenarts = true): array
+    {
+        try {
+            // Check cache first
+            $cache = HaynesProVehicle::getOrCreate($carTypeId);
+            
+            if ($cache->isFresh() && !is_null($cache->adjustments)) {
+                Log::info('HaynesPro: Using cached adjustments data', [
+                    'carTypeId' => $carTypeId,
+                    'cached_at' => $cache->updated_at,
+                    'response_count' => count($cache->adjustments ?? [])
+                ]);
+                
+                return $cache->adjustments;
+            }
+
+            // Cache miss or expired - fetch from API
+            Log::info('HaynesPro: Cache miss or expired, fetching all adjustments from API', [
+                'carTypeId' => $carTypeId,
+                'cache_exists' => !is_null($cache->adjustments),
+                'cache_fresh' => $cache->isFresh()
+            ]);
+
+            $response = $this->request('getAdjustmentsV7', [
+                'descriptionLanguage' => 'en',
+                'carType' => $carTypeId,  // Note: API uses 'carType' not 'carTypeId'
+                'includeSmartLinks' => $includeSmartLinks,
+                'includeGenarts' => $includeGenarts,
+                'includeCriterias' => false
+                // Note: No carTypeGroup parameter to get ALL adjustments
+            ], 'get');
+
+            // Update cache with fresh data
+            $cache->updateData('adjustments', $response);
+
+            Log::info('HaynesPro: Successfully retrieved and cached all adjustments', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? []),
+                'cached_at' => now()
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting all adjustments with cache', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get adjustments for a specific system group from cached data.
+     * Uses the cached complete adjustments data and filters by system group.
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @param string $systemGroup The system group to filter by
+     * @return array The filtered adjustments data for the system group
+     * @throws Exception If the API request fails
+     */
+    public function getAdjustmentsBySystemGroup(int $carTypeId, string $systemGroup): array
+    {
+        try {
+            // Get all adjustments (from cache or API)
+            $allAdjustments = $this->getAllAdjustmentsWithCache($carTypeId);
+            
+            // Filter by system group
+            $filteredAdjustments = array_filter($allAdjustments, function ($adjustment) use ($systemGroup) {
+                return isset($adjustment['name']) && 
+                       (stripos($adjustment['name'], $systemGroup) !== false || 
+                        (isset($adjustment['descriptionId']) && 
+                         $this->isSystemGroupMatch($adjustment, $systemGroup)));
+            });
+
+            Log::info('HaynesPro: Filtered adjustments by system group', [
+                'carTypeId' => $carTypeId,
+                'systemGroup' => $systemGroup,
+                'total_adjustments' => count($allAdjustments),
+                'filtered_count' => count($filteredAdjustments)
+            ]);
+
+            return array_values($filteredAdjustments); // Reset array keys
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting adjustments by system group', [
+                'carTypeId' => $carTypeId,
+                'systemGroup' => $systemGroup,
+                'error_message' => $e->getMessage()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Helper method to determine if an adjustment matches a system group.
+     * This is a simplified matching logic that can be enhanced as needed.
+     *
+     * @param array $adjustment The adjustment data
+     * @param string $systemGroup The system group to match
+     * @return bool Whether the adjustment matches the system group
+     */
+    private function isSystemGroupMatch(array $adjustment, string $systemGroup): bool
+    {
+        $systemGroup = strtoupper($systemGroup);
+        $adjustmentName = strtoupper($adjustment['name'] ?? '');
+        
+        // Simple keyword matching for common system groups
+        $systemKeywords = [
+            'ENGINE' => ['ENGINE', 'FUEL', 'TURBO', 'EXHAUST', 'INTAKE', 'COOLANT', 'OIL'],
+            'STEERING' => ['STEERING', 'WHEEL', 'ALIGNMENT', 'POWER STEERING'],
+            'BRAKES' => ['BRAKE', 'BRAKING'],
+            'ELECTRICAL' => ['ELECTRICAL', 'ALTERNATOR', 'STARTER', 'SENSOR', 'OXYGEN'],
+            'COOLING' => ['COOLING', 'COOLANT', 'RADIATOR', 'THERMOSTAT'],
+            'EMISSIONS' => ['EMISSION', 'EXHAUST', 'CATALYST', 'EGR'],
+            'WHEELS' => ['WHEEL', 'TYRE', 'TIRE'],
+        ];
+
+        if (isset($systemKeywords[$systemGroup])) {
+            foreach ($systemKeywords[$systemGroup] as $keyword) {
+                if (strpos($adjustmentName, $keyword) !== false) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

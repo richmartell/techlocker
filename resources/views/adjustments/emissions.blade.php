@@ -50,32 +50,29 @@
                         <!-- Section Header -->
                         <div class="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
                             <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                {{ $section['name'] }}
-                                @if($section['remark'])
-                                    <span class="text-sm text-zinc-500 font-normal ml-2">({{ $section['remark'] }})</span>
-                                @endif
+                                {{ $section['section_name'] }}
                             </h2>
                         </div>
                         
                         <!-- Section Content -->
                         <div class="p-6">
-                            @if(isset($section['subAdjustments']) && !empty($section['subAdjustments']))
+                            @if(isset($section['items']) && !empty($section['items']))
                                 <!-- Table for specifications -->
                                 <div class="overflow-x-auto">
                                     <table class="w-full">
                                         <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                                            @foreach($section['subAdjustments'] as $spec)
+                                            @foreach($section['items'] as $spec)
                                                 <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                                                     <td class="px-4 py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100 w-1/2">
-                                                        {{ $spec['name'] }}
-                                                        @if($spec['remark'])
+                                                        {{ $spec['name'] ?? 'Unknown' }}
+                                                        @if(isset($spec['remark']) && $spec['remark'])
                                                             <div class="text-xs text-zinc-500 mt-1">{{ $spec['remark'] }}</div>
                                                         @endif
                                                     </td>
                                                     <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                                                        @if($spec['value'])
+                                                        @if(isset($spec['value']) && $spec['value'])
                                                             <span class="font-medium">{{ $spec['value'] }}</span>
-                                                            @if($spec['unit'])
+                                                            @if(isset($spec['unit']) && $spec['unit'])
                                                                 <span class="text-zinc-500 ml-1">{{ $spec['unit'] }}</span>
                                                             @endif
                                                         @else
@@ -86,16 +83,6 @@
                                             @endforeach
                                         </tbody>
                                     </table>
-                                </div>
-                            @elseif($section['value'] || $section['unit'])
-                                <!-- Single value specification -->
-                                <div class="flex items-center gap-2 text-base">
-                                    @if($section['value'])
-                                        <span class="font-medium text-zinc-900 dark:text-zinc-100">{{ $section['value'] }}</span>
-                                    @endif
-                                    @if($section['unit'])
-                                        <span class="text-zinc-500">{{ $section['unit'] }}</span>
-                                    @endif
                                 </div>
                             @else
                                 <!-- No specific data message -->
