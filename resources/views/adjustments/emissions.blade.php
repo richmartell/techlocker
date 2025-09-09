@@ -105,23 +105,6 @@
             </div>
         @endif
 
-        <!-- Information Note -->
-        <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <div class="flex items-start gap-3">
-                <flux:icon.information-circle class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                <div>
-                    <p class="text-sm text-blue-800 dark:text-blue-200">
-                        @if(!empty($emissionsData))
-                            <strong>Live Data:</strong> Emissions data, fuel consumption values, and environmental standards are dynamically fetched from the HaynesPro API 
-                            based on this vehicle's car type ID ({{ $vehicle->car_type_id ?? 'Not available' }}). Data includes EURO standards, CO2 levels, and regulatory test parameters.
-                        @else
-                            <strong>No Data Available:</strong> Emissions data could not be loaded from the HaynesPro API. 
-                            This may be due to missing vehicle identification data, API connectivity issues, or no emissions data being available for this vehicle type.
-                        @endif
-                    </p>
-                </div>
-            </div>
-        </div>
 
         <!-- Legend for Common Emissions Terms -->
         @if(!empty($emissionsData))

@@ -234,23 +234,6 @@
             </div>
         @endif
 
-        <!-- Information Note -->
-        <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <div class="flex items-start gap-3">
-                <flux:icon.information-circle class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                <div>
-                    <p class="text-sm text-blue-800 dark:text-blue-200">
-                        @if(!empty($wheelsData))
-                            <strong>Live Data:</strong> Wheels and tyres specifications are dynamically fetched from the HaynesPro API 
-                            based on this vehicle's car type ID ({{ $vehicle->car_type_id ?? 'Not available' }}). Data includes wheel sizes, tyre specifications, rim dimensions, and pressure settings.
-                        @else
-                            <strong>No Data Available:</strong> Wheels and tyres data could not be loaded from the HaynesPro API. 
-                            This may be due to missing vehicle identification data or API connectivity issues.
-                        @endif
-                    </p>
-                </div>
-            </div>
-        </div>
 
         <!-- Wheels & Tyres Terms Legend -->
         @if(!empty($wheelsData))
