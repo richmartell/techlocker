@@ -675,7 +675,108 @@ class TechnicalInformationController extends Controller
     }
 
     /**
-     * Show service indicator reset procedures
+     * Show maintenance procedures listing page
+     */
+    public function procedures(string $registration)
+    {
+        try {
+            $vehicle = Vehicle::with(['make', 'model'])
+                ->where('registration', $registration)
+                ->firstOrFail();
+            
+            $carTypeId = $this->getCarTypeId($vehicle);
+
+            if (!$carTypeId) {
+                return back()->with('error', 'Vehicle identification not available for maintenance procedures');
+            }
+
+            // Get maintenance stories for this vehicle
+            $maintenanceStories = $this->haynespro->getMaintenanceStoriesWithCache($carTypeId);
+
+            return view('maintenance.procedures', [
+                'vehicle' => $vehicle,
+                'maintenanceStories' => $maintenanceStories,
+                'error' => null
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to fetch maintenance procedures', [
+                'registration' => $registration,
+                'error' => $e->getMessage()
+            ]);
+
+            return view('maintenance.procedures', [
+                'vehicle' => Vehicle::where('registration', $registration)->firstOrFail(),
+                'maintenanceStories' => [],
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show any maintenance story by storyId
+     */
+    public function maintenanceStory(string $registration, int $storyId)
+    {
+        try {
+            $vehicle = Vehicle::with(['make', 'model'])
+                ->where('registration', $registration)
+                ->firstOrFail();
+            
+            $carTypeId = $this->getCarTypeId($vehicle);
+
+            if (!$carTypeId) {
+                return back()->with('error', 'Vehicle identification not available for maintenance story');
+            }
+
+            // Get the story information using storyId
+            $storyData = $this->haynespro->getStoryInfoV6($carTypeId, $storyId, false);
+            
+            // Get the story metadata from cached maintenance stories
+            $storyMetadata = null;
+            try {
+                $maintenanceStories = $this->haynespro->getMaintenanceStoriesWithCache($carTypeId);
+                foreach ($maintenanceStories as $story) {
+                    if (($story['storyId'] ?? 0) == $storyId) {
+                        $storyMetadata = $story;
+                        break;
+                    }
+                }
+            } catch (Exception $e) {
+                Log::warning('Failed to get story metadata', [
+                    'registration' => $registration,
+                    'storyId' => $storyId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            return view('maintenance.story', [
+                'vehicle' => $vehicle,
+                'storyData' => $storyData,
+                'storyMetadata' => $storyMetadata,
+                'storyId' => $storyId,
+                'error' => null
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to fetch maintenance story data', [
+                'registration' => $registration,
+                'storyId' => $storyId,
+                'error' => $e->getMessage()
+            ]);
+
+            return view('maintenance.story', [
+                'vehicle' => Vehicle::where('registration', $registration)->firstOrFail(),
+                'storyData' => null,
+                'storyMetadata' => null,
+                'storyId' => $storyId,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show service indicator reset procedures (legacy route)
      */
     public function serviceIndicatorReset(string $registration)
     {
@@ -690,7 +791,26 @@ class TechnicalInformationController extends Controller
                 return back()->with('error', 'Vehicle identification not available for maintenance service reset');
             }
 
-            // Use the new story-based approach
+            // Find the service indicator reset story ID
+            $maintenanceStories = $this->haynespro->getMaintenanceStoriesWithCache($carTypeId);
+            $serviceResetStoryId = null;
+            
+            foreach ($maintenanceStories as $story) {
+                if (stripos($story['name'] ?? '', 'service indicator reset') !== false) {
+                    $serviceResetStoryId = $story['storyId'] ?? null;
+                    break;
+                }
+            }
+
+            if ($serviceResetStoryId) {
+                // Redirect to the generic story route
+                return redirect()->route('maintenance.story', [
+                    'registration' => $registration,
+                    'storyId' => $serviceResetStoryId
+                ]);
+            }
+
+            // Fallback to the old method if no story found
             $serviceResetData = $this->haynespro->getServiceIndicatorResetStory($carTypeId);
 
             return view('maintenance.service-indicator-reset', [

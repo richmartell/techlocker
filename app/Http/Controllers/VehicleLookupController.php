@@ -125,6 +125,30 @@ class VehicleLookupController extends Controller
 
                 $vehicle->save();
 
+                // Cache maintenance stories for this vehicle's car type
+                if ($carTypeId) {
+                    try {
+                        Log::info('Caching maintenance stories for vehicle', [
+                            'registration' => $registration,
+                            'car_type_id' => $carTypeId
+                        ]);
+                        
+                        $haynesProService->getMaintenanceStoriesWithCache($carTypeId);
+                        
+                        Log::info('Successfully cached maintenance stories', [
+                            'registration' => $registration,
+                            'car_type_id' => $carTypeId
+                        ]);
+                    } catch (Exception $e) {
+                        // Don't fail the vehicle lookup if maintenance stories caching fails
+                        Log::warning('Failed to cache maintenance stories', [
+                            'registration' => $registration,
+                            'car_type_id' => $carTypeId,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+
                 Log::info('Vehicle Lookup: Vehicle saved successfully with car type identification', [
                     'registration' => $registration,
                     'vehicle_id' => $vehicle->id,

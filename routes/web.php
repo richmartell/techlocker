@@ -108,12 +108,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/execute/{method}', [HaynesInspectorController::class, 'executeMethod'])->name('haynes-inspector.execute');
     });
     
-    // Maintenance Schedules Routes
+    // Maintenance Routes
     Route::prefix('vehicle/{registration}/maintenance')->group(function () {
         Route::get('/schedules', [TechnicalInformationController::class, 'schedules'])->name('maintenance.schedules');
         Route::get('/schedules/{systemId}/{periodId}', [TechnicalInformationController::class, 'scheduleDetails'])->name('maintenance.schedule-details');
-        Route::get('/service-indicator-reset', [TechnicalInformationController::class, 'serviceIndicatorReset'])->name('maintenance.service-indicator-reset');
-    });
+        
+        // Procedures listing page
+        Route::get('/procedures', [TechnicalInformationController::class, 'procedures'])->name('maintenance.procedures');
+        
+        // Generic route for any maintenance story
+        Route::get('/story/{storyId}', [TechnicalInformationController::class, 'maintenanceStory'])->name('maintenance.story');
+        
+    // Keep legacy route for backwards compatibility
+    Route::get('/service-indicator-reset', [TechnicalInformationController::class, 'serviceIndicatorReset'])->name('maintenance.service-indicator-reset');
+});
 });
 
 require __DIR__.'/auth.php';

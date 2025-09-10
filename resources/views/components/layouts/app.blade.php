@@ -121,9 +121,7 @@
                             <flux:navlist.item icon="document-text" :href="route('vehicle-details', $vehicle->registration)" :current="request()->routeIs('vehicle-details')" wire:navigate>Overview</flux:navlist.item>
                             <flux:navlist.group expandable :expanded="request()->routeIs('maintenance.*')" heading="Maintenance" icon="wrench-screwdriver">
                                 <flux:navlist.item :href="route('maintenance.schedules', $vehicle->registration)" :current="request()->routeIs('maintenance.schedules')" wire:navigate>Schedules</flux:navlist.item>
-                                <flux:navlist.item :href="route('maintenance.service-indicator-reset', $vehicle->registration)" :current="request()->routeIs('maintenance.service-indicator-reset')" wire:navigate>Service indicator reset</flux:navlist.item>
-                                <flux:navlist.item href="#" wire:navigate>Maintenance procedures</flux:navlist.item>
-                                <flux:navlist.item href="#" wire:navigate>Maintenance forms</flux:navlist.item>
+                                <flux:navlist.item :href="route('maintenance.procedures', $vehicle->registration)" :current="request()->routeIs('maintenance.procedures') || request()->routeIs('maintenance.story')" wire:navigate>Procedures</flux:navlist.item>
                             </flux:navlist.group>
                             <flux:navlist.group expandable :expanded="request()->routeIs('adjustments.*')" heading="Adjustments" icon="cog-8-tooth">
                                 <flux:navlist.item :href="route('adjustments.engine-general', $vehicle->registration)" :current="request()->routeIs('adjustments.engine-general')" wire:navigate>Engine (general)</flux:navlist.item>
