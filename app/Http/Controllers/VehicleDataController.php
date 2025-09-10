@@ -42,12 +42,12 @@ class VehicleDataController extends Controller
     }
 
     /**
-     * Get vehicle types for a specific make and model
+     * Get vehicle types for a specific model
      */
-    public function types($makeId, $modelId)
+    public function types($modelId)
     {
         try {
-            $types = $this->haynesPro->getVehicleTypes($makeId);
+            $types = $this->haynesPro->getVehicleTypes($modelId);
             return response()->json(['types' => $types]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

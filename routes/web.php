@@ -49,9 +49,9 @@ Route::get('/vehicle/{registration}', [VehicleController::class, 'show'])->middl
 
 Route::get('/vehicle-data/makes', [VehicleDataController::class, 'makes'])->middleware(['auth', 'verified'])->name('vehicle-data.makes');
 
-Route::get('/vehicle-data/makes/{makeId}/models', [VehicleDataController::class, 'models'])->middleware(['auth', 'verified'])->name('vehicle-data.models');
+Route::get('/vehicle-data/models/{makeId}', [VehicleDataController::class, 'models'])->middleware(['auth', 'verified'])->name('vehicle-data.models');
 
-Route::get('/vehicle-data/makes/{makeId}/models/{modelId}/types', [VehicleDataController::class, 'types'])->middleware(['auth', 'verified'])->name('vehicle-data.types');
+Route::get('/vehicle-data/types/{modelId}', [VehicleDataController::class, 'types'])->middleware(['auth', 'verified'])->name('vehicle-data.types');
 
 Route::get('/vehicle-data/type/{typeId}', [VehicleDataController::class, 'typeDetails'])->middleware(['auth', 'verified'])->name('vehicle-type');
 
