@@ -112,6 +112,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('vehicle/{registration}/maintenance')->group(function () {
         Route::get('/schedules', [TechnicalInformationController::class, 'schedules'])->name('maintenance.schedules');
         Route::get('/schedules/{systemId}/{periodId}', [TechnicalInformationController::class, 'scheduleDetails'])->name('maintenance.schedule-details');
+        Route::get('/service-indicator-reset', [TechnicalInformationController::class, 'serviceIndicatorReset'])->name('maintenance.service-indicator-reset');
     });
 });
 

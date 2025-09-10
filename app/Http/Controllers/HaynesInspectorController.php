@@ -467,6 +467,12 @@ class HaynesInspectorController extends Controller
                     'parameters' => ['carTypeId' => $carTypeId, 'systemId' => 1, 'periodId' => 'optional']
                 ],
                 [
+                    'method' => 'getMaintenanceServiceReset',
+                    'name' => 'Maintenance Service Reset',
+                    'description' => 'Get service indicator reset procedures for the vehicle',
+                    'parameters' => ['carTypeId' => $carTypeId]
+                ],
+                [
                     'method' => 'getMaintenanceForms',
                     'name' => 'Maintenance Forms',
                     'description' => 'Get maintenance forms for the vehicle',
@@ -637,6 +643,10 @@ class HaynesInspectorController extends Controller
             case 'getMaintenanceSystemOverviewV2':
                 $this->ensureCarTypeId($vehicle);
                 return $this->haynesProService->getMaintenanceSystemOverviewV2($vehicle->car_type_id);
+                
+            case 'getMaintenanceServiceReset':
+                $this->ensureCarTypeId($vehicle);
+                return $this->haynesProService->getMaintenanceServiceReset($vehicle->car_type_id);
                 
             case 'getMaintenancePartsForPeriod':
                 $this->ensureCarTypeId($vehicle);

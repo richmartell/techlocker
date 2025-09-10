@@ -274,37 +274,6 @@
             </flux:card>
         @endif
 
-        <!-- Debug Information (remove in production) -->
-        @if(config('app.debug'))
-            <div class="mt-8 space-y-4">
-                @if(!empty($intervalInfo))
-                    <flux:card>
-                        <div class="p-6">
-                            <h3 class="text-lg font-semibold mb-4">Debug: Interval Info</h3>
-                            <pre class="bg-zinc-100 dark:bg-zinc-800 p-4 rounded text-xs overflow-auto">{{ json_encode($intervalInfo, JSON_PRETTY_PRINT) }}</pre>
-                        </div>
-                    </flux:card>
-                @endif
-                
-                @if(!empty($maintenanceTasks))
-                    <flux:card>
-                        <div class="p-6">
-                            <h3 class="text-lg font-semibold mb-4">Debug: Raw Maintenance Tasks Data</h3>
-                            <pre class="bg-zinc-100 dark:bg-zinc-800 p-4 rounded text-xs overflow-auto">{{ json_encode($maintenanceTasks, JSON_PRETTY_PRINT) }}</pre>
-                        </div>
-                    </flux:card>
-                @endif
-                
-                @if(!empty($maintenanceParts))
-                    <flux:card>
-                        <div class="p-6">
-                            <h3 class="text-lg font-semibold mb-4">Debug: Raw Maintenance Parts Data</h3>
-                            <pre class="bg-zinc-100 dark:bg-zinc-800 p-4 rounded text-xs overflow-auto">{{ json_encode($maintenanceParts, JSON_PRETTY_PRINT) }}</pre>
-                        </div>
-                    </flux:card>
-                @endif
-            </div>
-        @endif
     </div>
 
     @if(!empty($maintenanceTasks))

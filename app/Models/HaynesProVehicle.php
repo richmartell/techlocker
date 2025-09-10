@@ -30,6 +30,8 @@ class HaynesProVehicle extends Model
         'adjustments',
         'maintenance_systems',
         'maintenance_tasks',
+        'maintenance_stories',
+        'maintenance_service_reset',
     ];
 
     /**
@@ -39,6 +41,8 @@ class HaynesProVehicle extends Model
         'adjustments' => 'array',
         'maintenance_systems' => 'array',
         'maintenance_tasks' => 'array',
+        'maintenance_stories' => 'array',
+        'maintenance_service_reset' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -59,9 +63,11 @@ class HaynesProVehicle extends Model
         return static::firstOrCreate(
             ['car_type_id' => $carTypeId],
             [
-                'adjustments' => null,
-                'maintenance_systems' => null,
-                'maintenance_tasks' => null,
+            'adjustments' => null,
+            'maintenance_systems' => null,
+            'maintenance_tasks' => null,
+            'maintenance_stories' => null,
+            'maintenance_service_reset' => null,
             ]
         );
     }

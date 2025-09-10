@@ -15,6 +15,35 @@
             </p>
         </div>
 
+        <!-- System Selector -->
+        @if(!empty($maintenanceSystems) && count($maintenanceSystems) > 1)
+            <div class="mb-6">
+                <flux:card>
+                    <div class="p-6">
+                        <label for="system-selector" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
+                            Maintenance Schedule Type
+                        </label>
+                        <flux:select 
+                            id="system-selector"
+                            name="systemId"
+                            onchange="window.location.href = '{{ route('maintenance.schedules', $vehicle->registration) }}?systemId=' + this.value"
+                        >
+                            <option value="">All Systems</option>
+                            @foreach($maintenanceSystems as $system)
+                                <option value="{{ $system['id'] ?? '' }}" 
+                                    {{ request('systemId') == ($system['id'] ?? '') ? 'selected' : '' }}>
+                                    {{ $system['name'] ?? 'Unknown System' }}
+                                </option>
+                            @endforeach
+                        </flux:select>
+                        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-2">
+                            Select a specific maintenance schedule type to view relevant service intervals
+                        </p>
+                    </div>
+                </flux:card>
+            </div>
+        @endif
+
         @if(!empty($maintenanceIntervals))
             <!-- Service Intervals Table -->
             <flux:table>
@@ -29,15 +58,7 @@
                             <flux:table.cell>
                                 <div class="space-y-1">
                                     <div class="font-medium text-zinc-900 dark:text-zinc-100">
-                                        @if(isset($interval['intervalMileage']) && $interval['intervalMileage'] > 0)
-                                            {{ number_format($interval['intervalMileage']) }} miles
-                                        @endif
-                                        @if(isset($interval['intervalMileage']) && $interval['intervalMileage'] > 0 && isset($interval['intervalMonths']) && $interval['intervalMonths'] > 0)
-                                            /
-                                        @endif
-                                        @if(isset($interval['intervalMonths']) && $interval['intervalMonths'] > 0)
-                                            {{ $interval['intervalMonths'] }} months
-                                        @endif
+                                        {{ $interval['description'] ?? 'Unknown Interval' }}
                                     </div>
                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">
                                         {{ $interval['systemName'] ?? 'Standard Service' }}
@@ -82,27 +103,5 @@
             </flux:card>
         @endif
 
-        <!-- Debug Information (remove in production) -->
-        @if(config('app.debug'))
-            <div class="mt-8 space-y-4">
-                @if(!empty($maintenanceIntervals))
-                    <flux:card>
-                        <div class="p-6">
-                            <h3 class="text-lg font-semibold mb-4">Debug: Maintenance Intervals ({{ count($maintenanceIntervals) }} found)</h3>
-                            <pre class="bg-zinc-100 dark:bg-zinc-800 p-4 rounded text-xs overflow-auto">{{ json_encode($maintenanceIntervals, JSON_PRETTY_PRINT) }}</pre>
-                        </div>
-                    </flux:card>
-                @endif
-                
-                @if(!empty($maintenanceSystems))
-                    <flux:card>
-                        <div class="p-6">
-                            <h3 class="text-lg font-semibold mb-4">Debug: Raw Maintenance Systems ({{ count($maintenanceSystems) }} found)</h3>
-                            <pre class="bg-zinc-100 dark:bg-zinc-800 p-4 rounded text-xs overflow-auto">{{ json_encode($maintenanceSystems, JSON_PRETTY_PRINT) }}</pre>
-                        </div>
-                    </flux:card>
-                @endif
-            </div>
-        @endif
     </div>
 </x-layouts.app> 

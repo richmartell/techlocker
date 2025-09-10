@@ -1705,6 +1705,263 @@ class HaynesPro
     }
 
     /**
+     * Get maintenance service reset for a vehicle by carTypeId.
+     * Based on getMaintenanceServiceReset from HaynesPro API documentation
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The maintenance service reset data
+     * @throws Exception If the API request fails
+     */
+    public function getMaintenanceStories(int $carTypeId): array
+    {
+        try {
+            Log::info('HaynesPro: Starting maintenance stories lookup', [
+                'carTypeId' => $carTypeId
+            ]);
+
+            $response = $this->request('getMaintenanceStories', [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved maintenance stories', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting maintenance stories', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Get story information using storyId.
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @param int $storyId The story ID
+     * @param bool $smartLinks Whether to include smart links
+     * @return array The story information data
+     * @throws Exception If the API request fails
+     */
+    public function getStoryInfoV6(int $carTypeId, int $storyId, bool $smartLinks = false): array
+    {
+        try {
+            Log::info('HaynesPro: Starting story info V6 lookup', [
+                'carTypeId' => $carTypeId,
+                'storyId' => $storyId,
+                'smartLinks' => $smartLinks
+            ]);
+
+            $response = $this->request('getStoryInfoV6', [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId,
+                'storyId' => $storyId,
+                'smartLinks' => $smartLinks
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved story info V6', [
+                'carTypeId' => $carTypeId,
+                'storyId' => $storyId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting story info V6', [
+                'carTypeId' => $carTypeId,
+                'storyId' => $storyId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get maintenance stories with caching.
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The cached maintenance stories data
+     * @throws Exception If the API request fails
+     */
+    public function getMaintenanceStoriesWithCache(int $carTypeId): array
+    {
+        try {
+            // Check cache first
+            $cache = HaynesProVehicle::getOrCreate($carTypeId);
+            
+            if ($cache->isFresh() && !is_null($cache->maintenance_stories)) {
+                Log::info('HaynesPro: Using cached maintenance stories data', [
+                    'carTypeId' => $carTypeId,
+                    'cached_at' => $cache->updated_at,
+                    'response_count' => count($cache->maintenance_stories ?? [])
+                ]);
+                
+                return $cache->maintenance_stories;
+            }
+
+            Log::info('HaynesPro: Cache miss or expired, fetching maintenance stories from API', [
+                'carTypeId' => $carTypeId,
+                'cache_exists' => !is_null($cache->maintenance_stories),
+                'cache_fresh' => $cache->isFresh()
+            ]);
+
+            $response = $this->getMaintenanceStories($carTypeId);
+
+            // Update cache with fresh data
+            $cache->updateData('maintenance_stories', $response);
+
+            Log::info('HaynesPro: Successfully retrieved and cached maintenance stories', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? []),
+                'cached_at' => now()
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting maintenance stories with cache', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get service indicator reset data using the story-based approach.
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The service indicator reset story data
+     * @throws Exception If the API request fails
+     */
+    public function getServiceIndicatorResetStory(int $carTypeId): array
+    {
+        try {
+            Log::info('HaynesPro: Starting service indicator reset story lookup', [
+                'carTypeId' => $carTypeId
+            ]);
+
+            // First, get maintenance stories to find the service indicator reset story
+            $stories = $this->getMaintenanceStoriesWithCache($carTypeId);
+            
+            // Find the service indicator reset story
+            $serviceResetStory = null;
+            foreach ($stories as $story) {
+                if (stripos($story['name'] ?? '', 'service indicator reset') !== false) {
+                    $serviceResetStory = $story;
+                    break;
+                }
+            }
+
+            if (!$serviceResetStory) {
+                throw new Exception('Service indicator reset story not found in maintenance stories');
+            }
+
+            $storyId = $serviceResetStory['storyId'] ?? null;
+            if (!$storyId) {
+                throw new Exception('Service indicator reset story ID not found');
+            }
+
+            // Get the detailed story information
+            $storyInfo = $this->getStoryInfoV6($carTypeId, $storyId, false);
+
+            Log::info('HaynesPro: Successfully retrieved service indicator reset story', [
+                'carTypeId' => $carTypeId,
+                'storyId' => $storyId,
+                'storyName' => $serviceResetStory['name'] ?? 'Unknown'
+            ]);
+
+            return [
+                'story' => $serviceResetStory,
+                'storyInfo' => $storyInfo
+            ];
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting service indicator reset story', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get maintenance service reset for a vehicle by carTypeId with caching.
+     * This method fetches maintenance service reset data and caches it for 24 hours.
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The maintenance service reset data
+     * @throws Exception If the API request fails
+     */
+    public function getMaintenanceServiceResetWithCache(int $carTypeId): array
+    {
+        try {
+            // Check cache first
+            $cache = HaynesProVehicle::getOrCreate($carTypeId);
+            
+            if ($cache->isFresh() && !is_null($cache->maintenance_service_reset)) {
+                Log::info('HaynesPro: Using cached maintenance service reset data', [
+                    'carTypeId' => $carTypeId,
+                    'cached_at' => $cache->updated_at,
+                    'response_count' => count($cache->maintenance_service_reset ?? [])
+                ]);
+                
+                return $cache->maintenance_service_reset;
+            }
+
+            // Cache miss or expired - fetch from API
+            Log::info('HaynesPro: Cache miss or expired, fetching maintenance service reset from API', [
+                'carTypeId' => $carTypeId,
+                'cache_exists' => !is_null($cache->maintenance_service_reset),
+                'cache_fresh' => $cache->isFresh()
+            ]);
+
+            // Using your specified format: carType parameter
+            $response = $this->request('getMaintenanceServiceReset', [
+                'descriptionLanguage' => 'en',
+                'carType' => $carTypeId
+            ], 'get');
+
+            // Update cache with fresh data
+            $cache->updateData('maintenance_service_reset', $response);
+
+            Log::info('HaynesPro: Successfully retrieved and cached maintenance service reset', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? []),
+                'cached_at' => now()
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting maintenance service reset with cache', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
      * Get maintenance tasks for a vehicle by carTypeId (Version 9).
      * Based on getMaintenanceTasksV9 from HaynesPro API documentation
      *

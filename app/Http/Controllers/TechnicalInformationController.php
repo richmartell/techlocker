@@ -355,7 +355,7 @@ class TechnicalInformationController extends Controller
     /**
      * Show maintenance schedules (service intervals) for a vehicle
      */
-    public function schedules(string $registration)
+    public function schedules(string $registration, Request $request)
     {
         try {
             $vehicle = Vehicle::with(['make', 'model'])
@@ -370,12 +370,20 @@ class TechnicalInformationController extends Controller
 
             // Get maintenance systems which contain the service intervals
             $maintenanceSystems = $this->haynespro->getMaintenanceSystems($carTypeId);
+            
+            // Get the selected system ID from query parameter
+            $selectedSystemId = $request->query('systemId');
 
             // Extract service intervals from maintenance periods
             $maintenanceIntervals = [];
             foreach ($maintenanceSystems as $system) {
                 $systemId = $system['id'] ?? 0;
                 $systemName = $system['name'] ?? 'Maintenance System';
+                
+                // Skip this system if a specific system is selected and this isn't it
+                if ($selectedSystemId && $selectedSystemId != $systemId) {
+                    continue;
+                }
                 
                 if (isset($system['maintenancePeriods']) && !empty($system['maintenancePeriods'])) {
                     foreach ($system['maintenancePeriods'] as $period) {
@@ -385,12 +393,14 @@ class TechnicalInformationController extends Controller
                         // Parse mileage and months from period name (e.g., "34,000 km/24 months")
                         $intervalMileage = 0;
                         $intervalMonths = 0;
+                        $isTraditionalInterval = false;
                         
-                        // Extract numbers from period name
+                        // Extract numbers from period name for traditional intervals
                         if (preg_match('/([0-9,]+)\s*(km|miles).*?(\d+)\s*months?/i', $periodName, $matches)) {
                             $rawMileage = (int) str_replace(',', '', $matches[1]);
                             $unit = strtolower($matches[2]);
                             $intervalMonths = (int) $matches[3];
+                            $isTraditionalInterval = true;
                             
                             // Convert kilometers to miles if needed
                             if ($unit === 'km') {
@@ -403,10 +413,18 @@ class TechnicalInformationController extends Controller
                             }
                         }
                         
-                        // Only add periods that have clear service intervals (not special offers, etc.)
-                        if ($intervalMileage > 0 && $intervalMonths > 0) {
-                            // Create a description with converted mileage in miles
-                            $convertedDescription = number_format($intervalMileage) . ' miles / ' . $intervalMonths . ' months';
+                        // Include traditional intervals with mileage/months OR condition-based procedures
+                        $shouldInclude = ($isTraditionalInterval && $intervalMileage > 0 && $intervalMonths > 0) || 
+                                       (!$isTraditionalInterval && !empty($periodName));
+                        
+                        if ($shouldInclude) {
+                            // Create appropriate description
+                            if ($isTraditionalInterval) {
+                                $description = number_format($intervalMileage) . ' miles / ' . $intervalMonths . ' months';
+                            } else {
+                                // For condition-based procedures, use the period name as description
+                                $description = $periodName;
+                            }
                             
                             $maintenanceIntervals[] = [
                                 'systemId' => $systemId,
@@ -414,8 +432,9 @@ class TechnicalInformationController extends Controller
                                 'periodId' => $periodId,
                                 'intervalMileage' => $intervalMileage,
                                 'intervalMonths' => $intervalMonths,
-                                'description' => $convertedDescription,
+                                'description' => $description,
                                 'originalDescription' => $periodName,
+                                'isTraditionalInterval' => $isTraditionalInterval,
                                 'tasks' => [] // Will be populated when viewing details
                             ];
                         }
@@ -427,6 +446,7 @@ class TechnicalInformationController extends Controller
                 'vehicle' => $vehicle,
                 'maintenanceIntervals' => $maintenanceIntervals,
                 'maintenanceSystems' => $maintenanceSystems,
+                'selectedSystemId' => $selectedSystemId,
                 'carTypeId' => $carTypeId
             ]);
         } catch (Exception $e) {
@@ -651,6 +671,45 @@ class TechnicalInformationController extends Controller
             ]);
             
             return back()->with('error', 'Failed to load schedule details: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show service indicator reset procedures
+     */
+    public function serviceIndicatorReset(string $registration)
+    {
+        try {
+            $vehicle = Vehicle::with(['make', 'model'])
+                ->where('registration', $registration)
+                ->firstOrFail();
+            
+            $carTypeId = $this->getCarTypeId($vehicle);
+
+            if (!$carTypeId) {
+                return back()->with('error', 'Vehicle identification not available for maintenance service reset');
+            }
+
+            // Use the new story-based approach
+            $serviceResetData = $this->haynespro->getServiceIndicatorResetStory($carTypeId);
+
+            return view('maintenance.service-indicator-reset', [
+                'vehicle' => $vehicle,
+                'serviceResetData' => $serviceResetData,
+                'error' => null
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to fetch service indicator reset data', [
+                'registration' => $registration,
+                'error' => $e->getMessage()
+            ]);
+
+            return view('maintenance.service-indicator-reset', [
+                'vehicle' => Vehicle::where('registration', $registration)->firstOrFail(),
+                'serviceResetData' => null,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
