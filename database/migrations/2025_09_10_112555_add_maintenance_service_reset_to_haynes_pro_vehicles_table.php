@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('haynes_pro_vehicles', function (Blueprint $table) {
             if (!Schema::hasColumn('haynes_pro_vehicles', 'maintenance_service_reset')) {
-                $table->json('maintenance_service_reset')->nullable()->after('maintenance_stories');
+                $table->json('maintenance_service_reset')->nullable()->after('maintenance_tasks');
             }
         });
     }
