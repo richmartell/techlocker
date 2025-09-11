@@ -12,12 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('vehicles', function (Blueprint $table) {
-            // Remove unused field
-            $table->dropColumn('technical_type_id');
+            // Remove unused field if it exists
+            if (Schema::hasColumn('vehicles', 'technical_type_id')) {
+                $table->dropColumn('technical_type_id');
+            }
             
-            // Add new fields
-            $table->string('combined_vin')->nullable()->after('forward_gears');
-            $table->string('haynes_model_variant_description')->nullable()->after('combined_vin');
+            // Add new fields if they don't exist
+            if (!Schema::hasColumn('vehicles', 'combined_vin')) {
+                $table->string('combined_vin')->nullable()->after('forward_gears');
+            }
+            if (!Schema::hasColumn('vehicles', 'haynes_model_variant_description')) {
+                $table->string('haynes_model_variant_description')->nullable()->after('combined_vin');
+            }
         });
     }
 
@@ -27,11 +33,18 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('vehicles', function (Blueprint $table) {
-            // Remove new fields
-            $table->dropColumn(['combined_vin', 'haynes_model_variant_description']);
+            // Remove new fields if they exist
+            if (Schema::hasColumn('vehicles', 'combined_vin')) {
+                $table->dropColumn('combined_vin');
+            }
+            if (Schema::hasColumn('vehicles', 'haynes_model_variant_description')) {
+                $table->dropColumn('haynes_model_variant_description');
+            }
             
-            // Add back the removed field
-            $table->string('technical_type_id')->nullable()->after('forward_gears');
+            // Add back the removed field if it doesn't exist
+            if (!Schema::hasColumn('vehicles', 'technical_type_id')) {
+                $table->string('technical_type_id')->nullable()->after('forward_gears');
+            }
         });
     }
 };

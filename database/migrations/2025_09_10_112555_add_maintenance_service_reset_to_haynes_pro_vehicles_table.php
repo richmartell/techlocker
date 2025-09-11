@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('haynes_pro_vehicles', function (Blueprint $table) {
-            $table->json('maintenance_service_reset')->nullable()->after('maintenance_stories');
+            if (!Schema::hasColumn('haynes_pro_vehicles', 'maintenance_service_reset')) {
+                $table->json('maintenance_service_reset')->nullable()->after('maintenance_stories');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('haynes_pro_vehicles', function (Blueprint $table) {
-            $table->dropColumn('maintenance_service_reset');
+            if (Schema::hasColumn('haynes_pro_vehicles', 'maintenance_service_reset')) {
+                $table->dropColumn('maintenance_service_reset');
+            }
         });
     }
 };
