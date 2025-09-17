@@ -34,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
                 Log::warning('HTTP Request Failed - Retrying', [
                     'exception' => get_class($exception),
                     'message' => $exception->getMessage(),
-                    'attempt' => $exception->retryCount() + 1
+                    'url' => (string) $request->url()
                 ]);
                 
                 return $exception instanceof \Illuminate\Http\Client\ConnectionException;

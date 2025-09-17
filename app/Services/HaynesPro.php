@@ -2544,4 +2544,270 @@ class HaynesPro
         }
     }
 
+    /**
+     * Fetch all available diagnostic and technical data for a vehicle.
+     * This method comprehensively fetches all possible data from the Haynes Pro API
+     * and caches it in the HaynesProVehicle table for use by the AI Diagnostics Assistant.
+     * 
+     * @param int $carTypeId The vehicle car type ID
+     * @param array $availableSubjects Available subjects/systems for this vehicle
+     * @return HaynesProVehicle The updated cache record
+     * @throws Exception If any critical API calls fail
+     */
+    public function fetchAllVehicleData(int $carTypeId, array $availableSubjects = []): HaynesProVehicle
+    {
+        try {
+            Log::info('HaynesPro: Starting comprehensive vehicle data fetch', [
+                'carTypeId' => $carTypeId,
+                'available_subjects_count' => count($availableSubjects)
+            ]);
+
+            // Get or create the cache record
+            $cache = HaynesProVehicle::getOrCreate($carTypeId);
+
+            // Check if we need to fetch comprehensive data
+            if (!$cache->needsComprehensiveFetch()) {
+                Log::info('HaynesPro: Comprehensive data is still fresh, skipping fetch', [
+                    'carTypeId' => $carTypeId,
+                    'last_fetch' => $cache->last_comprehensive_fetch
+                ]);
+                return $cache;
+            }
+
+            $fetchedData = [];
+            $fetchedData['available_subjects'] = $availableSubjects;
+
+            // Core maintenance data (already implemented with caching)
+            try {
+                $fetchedData['maintenance_systems'] = $this->getMaintenanceSystems($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch maintenance systems', ['error' => $e->getMessage()]);
+                $fetchedData['maintenance_systems'] = [];
+            }
+
+            try {
+                $fetchedData['maintenance_service_reset'] = $this->getMaintenanceServiceResetWithCache($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch maintenance service reset', ['error' => $e->getMessage()]);
+                $fetchedData['maintenance_service_reset'] = [];
+            }
+
+            try {
+                $fetchedData['maintenance_stories'] = $this->getMaintenanceStoriesWithCache($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch maintenance stories', ['error' => $e->getMessage()]);
+                $fetchedData['maintenance_stories'] = [];
+            }
+
+            try {
+                $fetchedData['adjustments'] = $this->getAllAdjustmentsWithCache($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch adjustments', ['error' => $e->getMessage()]);
+                $fetchedData['adjustments'] = [];
+            }
+
+            // New comprehensive diagnostic data
+            try {
+                $fetchedData['repair_time_infos'] = $this->getRepairTimeInfos($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch repair time infos', ['error' => $e->getMessage()]);
+                $fetchedData['repair_time_infos'] = [];
+            }
+
+            try {
+                $fetchedData['technical_drawings'] = $this->getTechnicalDrawings($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch technical drawings', ['error' => $e->getMessage()]);
+                $fetchedData['technical_drawings'] = [];
+            }
+
+            try {
+                $fetchedData['wiring_diagrams'] = $this->getWiringDiagrams($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch wiring diagrams', ['error' => $e->getMessage()]);
+                $fetchedData['wiring_diagrams'] = [];
+            }
+
+            try {
+                $fetchedData['fuse_locations'] = $this->getFuseLocations($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch fuse locations', ['error' => $e->getMessage()]);
+                $fetchedData['fuse_locations'] = [];
+            }
+
+            try {
+                $fetchedData['technical_bulletins'] = $this->getTechnicalBulletins($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch technical bulletins', ['error' => $e->getMessage()]);
+                $fetchedData['technical_bulletins'] = [];
+            }
+
+            try {
+                $fetchedData['recalls'] = $this->getRecalls($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch recalls', ['error' => $e->getMessage()]);
+                $fetchedData['recalls'] = [];
+            }
+
+            try {
+                $fetchedData['management_systems'] = $this->getManagementSystems($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch management systems', ['error' => $e->getMessage()]);
+                $fetchedData['management_systems'] = [];
+            }
+
+            try {
+                $fetchedData['story_overview'] = $this->getStoryOverview($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch story overview', ['error' => $e->getMessage()]);
+                $fetchedData['story_overview'] = [];
+            }
+
+            try {
+                $fetchedData['warning_lights'] = $this->getWarningLights($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch warning lights', ['error' => $e->getMessage()]);
+                $fetchedData['warning_lights'] = [];
+            }
+
+            try {
+                $fetchedData['engine_location'] = $this->getEngineLocation($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch engine location', ['error' => $e->getMessage()]);
+                $fetchedData['engine_location'] = [];
+            }
+
+            try {
+                $fetchedData['lubricants'] = $this->getAllLubricants($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch lubricants', ['error' => $e->getMessage()]);
+                $fetchedData['lubricants'] = [];
+            }
+
+            try {
+                $fetchedData['pids'] = $this->getPids($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch PIDs', ['error' => $e->getMessage()]);
+                $fetchedData['pids'] = [];
+            }
+
+            try {
+                $fetchedData['test_procedures'] = $this->getTestProcedures($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch test procedures', ['error' => $e->getMessage()]);
+                $fetchedData['test_procedures'] = [];
+            }
+
+            try {
+                $fetchedData['structure'] = $this->getStructureByCarTypeId($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch structure', ['error' => $e->getMessage()]);
+                $fetchedData['structure'] = [];
+            }
+
+            try {
+                $fetchedData['maintenance_forms'] = $this->getMaintenanceForms($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch maintenance forms', ['error' => $e->getMessage()]);
+                $fetchedData['maintenance_forms'] = [];
+            }
+
+            try {
+                $fetchedData['maintenance_intervals'] = $this->getAllMaintenanceIntervals($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch maintenance intervals', ['error' => $e->getMessage()]);
+                $fetchedData['maintenance_intervals'] = [];
+            }
+
+            try {
+                $fetchedData['timing_belt_maintenance'] = $this->getTimingBeltMaintenanceTasksV5($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch timing belt maintenance', ['error' => $e->getMessage()]);
+                $fetchedData['timing_belt_maintenance'] = [];
+            }
+
+            try {
+                $fetchedData['timing_belt_intervals'] = $this->getTimingBeltReplacementIntervals($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch timing belt intervals', ['error' => $e->getMessage()]);
+                $fetchedData['timing_belt_intervals'] = [];
+            }
+
+            try {
+                $fetchedData['wear_parts_intervals'] = $this->getWearPartsIntervalsV3($carTypeId);
+            } catch (Exception $e) {
+                Log::warning('HaynesPro: Failed to fetch wear parts intervals', ['error' => $e->getMessage()]);
+                $fetchedData['wear_parts_intervals'] = [];
+            }
+
+            // Update all data at once and mark as comprehensively fetched
+            $cache->updateMultipleData($fetchedData);
+            $cache->markComprehensiveFetchComplete();
+
+            Log::info('HaynesPro: Comprehensive vehicle data fetch completed', [
+                'carTypeId' => $carTypeId,
+                'fetched_fields' => array_keys($fetchedData),
+                'total_fields' => count($fetchedData)
+            ]);
+
+            return $cache;
+
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception in comprehensive vehicle data fetch', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Quick method to ensure a vehicle has basic diagnostic data cached.
+     * This is intended to be called when the Diagnostics AI Assistant loads.
+     * 
+     * @param string $registration Vehicle registration number
+     * @return HaynesProVehicle|null The cached vehicle data, or null if vehicle not found
+     */
+    public function ensureVehicleDataCached(string $registration): ?HaynesProVehicle
+    {
+        try {
+            // First, identify the vehicle to get car type ID
+            $identification = $this->identifyVehicleComplete($registration);
+            
+            if (!$identification['car_type_id']) {
+                Log::info('HaynesPro: No car type ID found for vehicle, cannot cache data', [
+                    'registration' => $registration,
+                    'identification_method' => $identification['identification_method'] ?? 'unknown'
+                ]);
+                return null;
+            }
+
+            $carTypeId = $identification['car_type_id'];
+            $availableSubjects = $identification['available_subjects'] ?? [];
+
+            // Store vehicle identification data if we have it
+            $vehicleData = $identification['vehicle_data'] ?? null;
+            if ($vehicleData) {
+                $cache = HaynesProVehicle::getOrCreate($carTypeId);
+                $cache->updateData('vehicle_identification_data', $vehicleData);
+            }
+
+            // Fetch all available data
+            return $this->fetchAllVehicleData($carTypeId, $availableSubjects);
+
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception ensuring vehicle data is cached', [
+                'registration' => $registration,
+                'error_message' => $e->getMessage()
+            ]);
+            
+            // Return null rather than throwing, as this is used for enhancement, not critical functionality
+            return null;
+        }
+    }
+
 } 

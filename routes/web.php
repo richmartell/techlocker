@@ -99,8 +99,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/torque-settings', [AdjustmentsController::class, 'torqueSettings'])->name('adjustments.torque-settings');
     });
     
-    // Vehicle Diagnostics Route
+    // Vehicle Diagnostics Routes
     Route::get('/vehicle/{registration}/diagnostics', [DiagnosticsController::class, 'show'])->middleware(['auth', 'verified'])->name('vehicle-diagnostics');
+    Route::post('/vehicle/{registration}/diagnostics/process', [DiagnosticsController::class, 'processMessage'])->middleware(['auth', 'verified'])->name('vehicle-diagnostics.process');
+    
+    // Diagnostics Logs (Debug only)
+    Route::get('/diagnostics/logs', [DiagnosticsController::class, 'showLogs'])->name('diagnostics.logs');
     
     // Haynes Inspector Routes
     Route::prefix('vehicle/{registration}/haynes-inspector')->group(function () {

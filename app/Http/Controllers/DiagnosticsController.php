@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\DiagnosticsAiLog;
 
 class DiagnosticsController extends Controller
 {
@@ -34,6 +35,9 @@ class DiagnosticsController extends Controller
      */
     public function processMessage(Request $request)
     {
+        $startTime = microtime(true);
+        $sessionId = $request->header('X-Session-ID') ?? session()->getId();
+        
         $request->validate([
             'message' => 'required|string|max:1000',
             'registration' => 'required|string',
@@ -42,10 +46,34 @@ class DiagnosticsController extends Controller
         $userMessage = $request->input('message');
         $registration = $request->input('registration');
         
+        // Get vehicle data for logging
+        $vehicle = \App\Models\Vehicle::with(['make', 'model'])
+            ->where('registration', $registration)
+            ->first();
+
+        $vehicleData = $vehicle ? [
+            'registration' => $vehicle->registration,
+            'make' => $vehicle->make?->name ?? 'Unknown',
+            'model' => $vehicle->model?->name ?? 'Unknown',
+            'year' => $vehicle->year_of_manufacture ?? 'Unknown',
+            'engine' => $vehicle->engine_capacity ? $vehicle->engine_capacity . 'cc' : 'Unknown',
+        ] : null;
+        
         Log::info('Diagnostics request received', [
             'message' => $userMessage,
-            'registration' => $registration
+            'registration' => $registration,
+            'session_id' => $sessionId
         ]);
+        
+        // Initialize log data
+        $logData = [
+            'user_message' => $userMessage,
+            'session_id' => $sessionId,
+            'vehicle_registration' => $registration,
+            'vehicle_data' => $vehicleData,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ];
         
         // Check if we should use OpenAI API
         if (config('services.openai.api_key')) {
@@ -53,10 +81,11 @@ class DiagnosticsController extends Controller
             Log::info('OpenAI model: ' . config('services.openai.model'));
             
             try {
-                $response = $this->getOpenAIResponse($userMessage, $registration);
+                $response = $this->getOpenAIResponse($userMessage, $registration, $logData, $startTime);
                 
                 Log::info('OpenAI API response received', [
-                    'response_length' => strlen($response)
+                    'response_length' => strlen($response),
+                    'session_id' => $sessionId
                 ]);
                 
                 return response()->json([
@@ -66,15 +95,28 @@ class DiagnosticsController extends Controller
             } catch (\Exception $e) {
                 Log::error('OpenAI API error: ' . $e->getMessage(), [
                     'exception' => get_class($e),
-                    'trace' => $e->getTraceAsString()
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                    'session_id' => $sessionId
                 ]);
                 
                 // Fallback to local response if API fails
                 $response = $this->generateLocalDiagnosticResponse($userMessage, $registration);
+                $fallbackResponse = $response . "\n\n(Note: This response was generated locally as the AI service was unavailable. Error: " . $e->getMessage() . ")";
+                
+                // Log the fallback interaction
+                $logData['ai_response'] = $fallbackResponse;
+                $logData['status'] = 'fallback';
+                $logData['error_message'] = $e->getMessage();
+                $logData['fallback_reason'] = 'api_error';
+                $logData['response_time_ms'] = round((microtime(true) - $startTime) * 1000);
+                
+                DiagnosticsAiLog::logInteraction($logData);
                 
                 return response()->json([
                     'success' => true,
-                    'message' => $response . "\n\n(Note: This response was generated locally as the AI service was unavailable. Error: " . $e->getMessage() . ")",
+                    'message' => $fallbackResponse,
                 ]);
             }
         } else {
@@ -82,6 +124,14 @@ class DiagnosticsController extends Controller
             
             // Use local response generation if no API key is set
             $response = $this->generateLocalDiagnosticResponse($userMessage, $registration);
+            
+            // Log the local interaction
+            $logData['ai_response'] = $response;
+            $logData['status'] = 'fallback';
+            $logData['fallback_reason'] = 'no_api_key';
+            $logData['response_time_ms'] = round((microtime(true) - $startTime) * 1000);
+            
+            DiagnosticsAiLog::logInteraction($logData);
             
             return response()->json([
                 'success' => true,
@@ -93,18 +143,30 @@ class DiagnosticsController extends Controller
     /**
      * Get a response from the OpenAI API.
      */
-    private function getOpenAIResponse(string $userMessage, string $registration): string
+    private function getOpenAIResponse(string $userMessage, string $registration, array &$logData, float $startTime): string
     {
-        // Get vehicle data (in a real app, this would be fetched from the database)
+        // Get vehicle data from database
+        $vehicle = \App\Models\Vehicle::with(['make', 'model'])
+            ->where('registration', $registration)
+            ->first();
+
+        if (!$vehicle) {
+            throw new \Exception("Vehicle with registration {$registration} not found");
+        }
+
         $vehicleData = [
-            'registration' => $registration,
-            'make' => 'Land Rover',
-            'model' => 'Defender 90',
-            'year' => '2022',
-            'engine' => '2.0L Ingenium',
+            'registration' => $vehicle->registration,
+            'make' => $vehicle->make?->name ?? 'Unknown',
+            'model' => $vehicle->model?->name ?? 'Unknown',
+            'year' => $vehicle->year_of_manufacture ?? 'Unknown',
+            'engine' => $vehicle->engine_capacity ? $vehicle->engine_capacity . 'cc' : 'Unknown',
         ];
 
-        // Craft system message with vehicle context
+        // Get Haynes Pro diagnostic data
+        $haynesProService = app(\App\Services\HaynesPro::class);
+        $haynesProData = $haynesProService->ensureVehicleDataCached($registration);
+        
+        // Start building the system message
         $systemMessage = "You are DiagnosticsAI, an expert automotive diagnostic assistant specializing in vehicle issues. " .
                         "You're currently helping with a {$vehicleData['year']} {$vehicleData['make']} {$vehicleData['model']} " .
                         "with a {$vehicleData['engine']} engine (registration: {$vehicleData['registration']}). " .
@@ -112,9 +174,31 @@ class DiagnosticsController extends Controller
                         "Be concise but thorough. Organize your response with clear sections when appropriate. " .
                         "Be conversational but focus on technical accuracy.";
 
+        // Add comprehensive Haynes Pro technical data if available
+        if ($haynesProData) {
+            $technicalData = $haynesProData->getFormattedDataForAI();
+            if (!empty($technicalData)) {
+                $systemMessage .= "\n\nYou have access to the following comprehensive technical data for this specific vehicle:\n\n" . $technicalData;
+                $systemMessage .= "\n\nUse this technical data to provide more accurate and specific diagnostic information. " .
+                                 "Reference specific warning lights, recall information, technical bulletins, maintenance intervals, " .
+                                 "fuse locations, test procedures, and other relevant technical details when applicable to the user's query.";
+            }
+
+            Log::info('Haynes Pro data included in AI context', [
+                'carTypeId' => $haynesProData->car_type_id,
+                'available_sections' => $this->getAvailableDataSections($haynesProData),
+                'last_comprehensive_fetch' => $haynesProData->last_comprehensive_fetch
+            ]);
+        } else {
+            Log::info('No Haynes Pro data available for this vehicle', [
+                'registration' => $registration
+            ]);
+        }
+
         Log::info('Preparing OpenAI API request', [
             'system_message_length' => strlen($systemMessage),
-            'user_message' => $userMessage
+            'user_message' => $userMessage,
+            'has_haynes_data' => $haynesProData !== null
         ]);
 
         $requestPayload = [
@@ -124,10 +208,16 @@ class DiagnosticsController extends Controller
                 ['role' => 'user', 'content' => $userMessage]
             ],
             'temperature' => 0.7,
-            'max_tokens' => 800,
+            'max_tokens' => 1200, // Increased token limit to accommodate more detailed responses
         ];
         
-        Log::debug('Full OpenAI request payload', $requestPayload);
+        Log::debug('Full OpenAI request payload (message content truncated)', [
+            'model' => $requestPayload['model'],
+            'temperature' => $requestPayload['temperature'],
+            'max_tokens' => $requestPayload['max_tokens'],
+            'system_message_length' => strlen($requestPayload['messages'][0]['content']),
+            'user_message' => $requestPayload['messages'][1]['content']
+        ]);
 
         // Send request to OpenAI API
         $response = Http::withLogging()->withHeaders([
@@ -143,9 +233,36 @@ class DiagnosticsController extends Controller
 
         if ($response->successful()) {
             $responseData = $response->json();
-            Log::debug('Full OpenAI response', $responseData);
+            $aiResponse = $responseData['choices'][0]['message']['content'];
             
-            return $responseData['choices'][0]['message']['content'];
+            Log::debug('Full OpenAI response received', [
+                'finish_reason' => $responseData['choices'][0]['finish_reason'] ?? 'unknown',
+                'response_length' => strlen($aiResponse)
+            ]);
+            
+            // Update log data with successful response information
+            $logData['ai_response'] = $aiResponse;
+            $logData['status'] = 'success';
+            $logData['ai_model'] = $requestPayload['model'];
+            $logData['temperature'] = $requestPayload['temperature'];
+            $logData['max_tokens'] = $requestPayload['max_tokens'];
+            $logData['system_message'] = $systemMessage; // Will be removed in logInteraction but used for length calculation
+            $logData['response_time_ms'] = round((microtime(true) - $startTime) * 1000);
+            
+            // Add Haynes Pro data information if available
+            if ($haynesProData) {
+                $logData['haynes_car_type_id'] = $haynesProData->car_type_id;
+                $logData['haynes_data_available'] = true;
+                $logData['haynes_data_sections'] = $this->getAvailableDataSections($haynesProData);
+                $logData['haynes_last_fetch'] = $haynesProData->last_comprehensive_fetch;
+            } else {
+                $logData['haynes_data_available'] = false;
+            }
+            
+            // Log the successful interaction
+            DiagnosticsAiLog::logInteraction($logData);
+            
+            return $aiResponse;
         } else {
             Log::error('OpenAI API error response', [
                 'status' => $response->status(),
@@ -154,6 +271,74 @@ class DiagnosticsController extends Controller
             
             throw new \Exception('Failed to get response from OpenAI API: ' . $response->status() . ' - ' . $response->body());
         }
+    }
+
+    /**
+     * Get a list of available data sections for logging purposes.
+     */
+    private function getAvailableDataSections(\App\Models\HaynesProVehicle $haynesProData): array
+    {
+        $sections = [];
+        
+        $fields = [
+            'vehicle_identification_data' => 'Vehicle ID',
+            'warning_lights' => 'Warning Lights',
+            'technical_bulletins' => 'Technical Bulletins',
+            'recalls' => 'Recalls',
+            'maintenance_systems' => 'Maintenance Systems',
+            'maintenance_intervals' => 'Maintenance Intervals',
+            'engine_location' => 'Engine Location',
+            'fuse_locations' => 'Fuse Locations',
+            'test_procedures' => 'Test Procedures',
+            'pids' => 'Diagnostic PIDs',
+            'lubricants' => 'Lubricants',
+            'timing_belt_intervals' => 'Timing Belt',
+            'wear_parts_intervals' => 'Wear Parts',
+            'available_subjects' => 'Available Systems'
+        ];
+
+        foreach ($fields as $field => $label) {
+            if (!empty($haynesProData->$field)) {
+                $sections[] = $label;
+            }
+        }
+
+        return $sections;
+    }
+
+    /**
+     * Show diagnostics AI logs for debugging (admin only).
+     */
+    public function showLogs(Request $request)
+    {
+        // Simple authentication check - you might want to use proper middleware
+        if (!config('app.debug') && !auth()->check()) {
+            abort(403, 'Access denied');
+        }
+
+        $query = DiagnosticsAiLog::query()->orderBy('created_at', 'desc');
+
+        // Apply filters from request
+        if ($vehicle = $request->get('vehicle')) {
+            $query->forVehicle($vehicle);
+        }
+
+        if ($status = $request->get('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($request->get('recent')) {
+            $query->recent();
+        }
+
+        if ($request->get('errors')) {
+            $query->withErrors();
+        }
+
+        $logs = $query->paginate(20);
+        $stats = DiagnosticsAiLog::getPerformanceMetrics();
+
+        return view('diagnostics-logs', compact('logs', 'stats'));
     }
 
     /**
