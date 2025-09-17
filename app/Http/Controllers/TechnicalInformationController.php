@@ -197,7 +197,7 @@ class TechnicalInformationController extends Controller
     }
 
     /**
-     * Get lubricants for a vehicle by system group
+     * Get lubricants for a vehicle by system group (legacy technical information route)
      */
     public function lubricants(string $registration, string $systemGroup)
     {
@@ -225,6 +225,45 @@ class TechnicalInformationController extends Controller
             ]);
             
             return back()->with('error', 'Failed to load lubricants: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show all lubricants information for a vehicle (maintenance section)
+     */
+    public function maintenanceLubricants(string $registration)
+    {
+        try {
+            $vehicle = Vehicle::with(['make', 'model'])
+                ->where('registration', $registration)
+                ->firstOrFail();
+            
+            $carTypeId = $this->getCarTypeId($vehicle);
+
+            if (!$carTypeId) {
+                return back()->with('error', 'Vehicle identification not available for lubricants information');
+            }
+
+            // Get lubricants data for this vehicle
+            $lubricants = $this->haynespro->getAllLubricants($carTypeId);
+
+            return view('maintenance.lubricants', [
+                'vehicle' => $vehicle,
+                'lubricants' => $lubricants,
+                'error' => null
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to fetch lubricants', [
+                'registration' => $registration,
+                'error' => $e->getMessage()
+            ]);
+
+            return view('maintenance.lubricants', [
+                'vehicle' => Vehicle::where('registration', $registration)->firstOrFail(),
+                'lubricants' => [],
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
@@ -774,6 +813,7 @@ class TechnicalInformationController extends Controller
             ]);
         }
     }
+
 
     /**
      * Show service indicator reset procedures (legacy route)

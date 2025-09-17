@@ -116,6 +116,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Procedures listing page
         Route::get('/procedures', [TechnicalInformationController::class, 'procedures'])->name('maintenance.procedures');
         
+        // Lubricants page
+        Route::get('/lubricants', [TechnicalInformationController::class, 'maintenanceLubricants'])->name('maintenance.lubricants');
+        
         // Generic route for any maintenance story
         Route::get('/story/{storyId}', [TechnicalInformationController::class, 'maintenanceStory'])->name('maintenance.story');
         

@@ -1104,6 +1104,46 @@ class HaynesPro
     }
 
     /**
+     * Get all lubricants for a vehicle by carTypeId (simplified version).
+     * Based on getLubricantsV5 from HaynesPro API documentation
+     * This matches the user's API specification: ?vrid={{vrid}}&descriptionLanguage={{descriptionLanguage}}&carType={{carTypeId}}
+     *
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array The lubricants data
+     * @throws Exception If the API request fails
+     */
+    public function getAllLubricants(int $carTypeId): array
+    {
+        try {
+            Log::info('HaynesPro: Starting all lubricants lookup', [
+                'carTypeId' => $carTypeId
+            ]);
+
+            $response = $this->request('getLubricantsV5', [
+                'descriptionLanguage' => 'en',
+                'carType' => $carTypeId
+            ], 'get');
+
+            Log::info('HaynesPro: Successfully retrieved all lubricants', [
+                'carTypeId' => $carTypeId,
+                'response_count' => count($response ?? [])
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting all lubricants', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
      * Get vehicle details from the HaynesPro VRM API.
      *
      * @param string $vrm The vehicle registration mark
