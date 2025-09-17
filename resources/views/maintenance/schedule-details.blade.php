@@ -62,7 +62,10 @@
                     <!-- Checklist Container -->
                     <flux:card>
                         <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                            @php $currentCategory = null; @endphp
+                            @php 
+                                $currentCategory = null; 
+                                $taskCounter = 0;
+                            @endphp
                             @foreach($maintenanceTasks as $index => $task)
                                 {{-- Show category header when category changes --}}
                                 @if($currentCategory !== ($task['category'] ?? 'General'))
@@ -81,7 +84,12 @@
                                         </div>
                                     </div>
                                 @endif
+                                @php $taskCounter++; @endphp
                                 <div class="flex items-start gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                                    <!-- Task Number -->
+                                    <div class="flex-shrink-0 w-7 h-7 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full flex items-center justify-center text-xs font-medium mt-1">
+                                        {{ $taskCounter }}
+                                    </div>
                                     <!-- Checkbox -->
                                     <div class="flex-shrink-0 mt-1">
                                         <input 

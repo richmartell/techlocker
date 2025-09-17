@@ -144,9 +144,9 @@
                     @if(!empty($contentSections))
                         <!-- Structured procedure content -->
                         <div class="space-y-6">
-                            @php $stepCounter = 0; @endphp
                             @foreach($contentSections as $section)
                                 @if($section['type'] === 'section' && $section['level'] === 0)
+                                    @php $taskCounter = 0; @endphp
                                     <!-- Main section -->
                                     <div class="mb-6">
                                         <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
@@ -160,23 +160,28 @@
                                         @if(!empty($section['subsections']))
                                             <div class="space-y-3">
                                                 @foreach($section['subsections'] as $subsection)
-                                                    @php $stepCounter++; @endphp
                                                     @if($subsection['level'] === 1)
-                                                        <!-- Subsection header -->
-                                                        <h4 class="font-medium text-zinc-800 dark:text-zinc-200 mt-4 mb-2">
-                                                            {{ $subsection['name'] }}
-                                                        </h4>
-                                                        @if(!empty($subsection['text']))
-                                                            <p class="text-zinc-600 dark:text-zinc-400 mb-3">{{ $subsection['text'] }}</p>
-                                                        @endif
+                                                        <!-- Level 1 subsections are actual tasks - number them sequentially -->
+                                                        @php $taskCounter++; @endphp
+                                                        <div class="flex items-start gap-3">
+                                                            <div class="flex-shrink-0 w-7 h-7 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full flex items-center justify-center text-xs font-medium">
+                                                                {{ $taskCounter }}
+                                                            </div>
+                                                            <div class="flex-1">
+                                                                <p class="text-zinc-900 dark:text-zinc-100">{{ $subsection['name'] }}</p>
+                                                                @if(!empty($subsection['text']))
+                                                                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">{{ $subsection['text'] }}</p>
+                                                                @endif
+                                                            </div>
+                                                        </div>
                                                         
                                                         @if(!empty($subsection['subsections']))
                                                             <div class="space-y-2 ml-4">
                                                                 @foreach($subsection['subsections'] as $step)
-                                                                    @php $stepCounter++; @endphp
+                                                                    @php $taskCounter++; @endphp
                                                                     <div class="flex items-start gap-3">
                                                                         <div class="flex-shrink-0 w-7 h-7 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full flex items-center justify-center text-xs font-medium">
-                                                                            {{ $stepCounter }}
+                                                                            {{ $taskCounter }}
                                                                         </div>
                                                                         <div class="flex-1">
                                                                             <p class="text-zinc-900 dark:text-zinc-100">{{ $step['name'] }}</p>
@@ -189,10 +194,11 @@
                                                             </div>
                                                         @endif
                                                     @else
-                                                        <!-- Direct step -->
+                                                        <!-- Direct step - Use sequential counter -->
+                                                        @php $taskCounter++; @endphp
                                                         <div class="flex items-start gap-3">
                                                             <div class="flex-shrink-0 w-7 h-7 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full flex items-center justify-center text-xs font-medium">
-                                                                {{ $stepCounter }}
+                                                                {{ $taskCounter }}
                                                             </div>
                                                             <div class="flex-1">
                                                                 <p class="text-zinc-900 dark:text-zinc-100">{{ $subsection['name'] }}</p>
@@ -207,11 +213,11 @@
                                         @endif
                                     </div>
                                 @else
-                                    <!-- Simple step -->
-                                    @php $stepCounter++; @endphp
+                                    <!-- Simple step - Use sequential counter -->
+                                    @php $taskCounter++; @endphp
                                     <div class="flex items-start gap-3">
                                         <div class="flex-shrink-0 w-7 h-7 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full flex items-center justify-center text-xs font-medium">
-                                            {{ $stepCounter }}
+                                            {{ $taskCounter }}
                                         </div>
                                         <div class="flex-1">
                                             <p class="text-zinc-900 dark:text-zinc-100">{{ $section['name'] }}</p>
@@ -224,22 +230,109 @@
                             @endforeach
                         </div>
                     @else
-                        <!-- Display debug info and raw API response -->
-                        <div class="prose prose-zinc dark:prose-invert max-w-none space-y-4">
-                            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                                <h3 class="text-lg font-semibold mb-2 text-yellow-800 dark:text-yellow-200">Debug Information</h3>
-                                <pre class="bg-white dark:bg-zinc-800 p-3 rounded text-sm">Story ID: {{ $storyId }}
+                        <!-- Fallback: Try to extract and number any content from raw story data -->
+                        @php
+                            $fallbackSteps = [];
+                            
+                            // Try to extract content from various possible data structures
+                            function extractStepsFromData($data, &$steps = []) {
+                                if (is_string($data) && !empty(trim($data))) {
+                                    // Split by common delimiters and clean up
+                                    $lines = preg_split('/[\n\r]+/', $data);
+                                    foreach ($lines as $line) {
+                                        $line = trim($line);
+                                        if (strlen($line) > 3 && !preg_match('/^\d+\.?\s*$/', $line)) {
+                                            $steps[] = $line;
+                                        }
+                                    }
+                                } elseif (is_array($data)) {
+                                    foreach ($data as $key => $item) {
+                                        if (is_string($item) && !empty(trim($item))) {
+                                            $item = trim($item);
+                                            if (strlen($item) > 3) {
+                                                $steps[] = $item;
+                                            }
+                                        } elseif (is_array($item)) {
+                                            // Look for common field names
+                                            if (isset($item['text']) && !empty($item['text'])) {
+                                                $text = trim($item['text']);
+                                                if (strlen($text) > 3) {
+                                                    $steps[] = $text;
+                                                }
+                                            } elseif (isset($item['name']) && !empty($item['name'])) {
+                                                $text = trim($item['name']);
+                                                if (strlen($text) > 3) {
+                                                    $steps[] = $text;
+                                                }
+                                            } elseif (isset($item['content']) && !empty($item['content'])) {
+                                                $text = trim($item['content']);
+                                                if (strlen($text) > 3) {
+                                                    $steps[] = $text;
+                                                }
+                                            } else {
+                                                // Recursively check nested arrays
+                                                extractStepsFromData($item, $steps);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            extractStepsFromData($storyData, $fallbackSteps);
+                            
+                            // Remove duplicates and empty entries
+                            $fallbackSteps = array_unique(array_filter($fallbackSteps, function($step) {
+                                return !empty(trim($step)) && strlen(trim($step)) > 3;
+                            }));
+                        @endphp
+                        
+                        @if(!empty($fallbackSteps))
+                            <!-- Extracted procedure steps with numbering -->
+                            <div class="space-y-3">
+                                @foreach($fallbackSteps as $index => $step)
+                                    <div class="flex items-start gap-3">
+                                        <div class="flex-shrink-0 w-7 h-7 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full flex items-center justify-center text-xs font-medium">
+                                            {{ $index + 1 }}
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-zinc-900 dark:text-zinc-100">{{ $step }}</p>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <!-- No extractable content found -->
+                            <div class="text-center py-8">
+                                <flux:icon.exclamation-triangle class="w-12 h-12 text-zinc-400 mx-auto mb-4" />
+                                <h3 class="text-lg font-medium text-zinc-900 dark:text-zinc-100 mb-2">Procedure Content Not Available</h3>
+                                <p class="text-zinc-600 dark:text-zinc-400">
+                                    The maintenance procedure data could not be processed for display.
+                                </p>
+                            </div>
+                        @endif
+                        
+                        <!-- Debug Information (development only) -->
+                        @if(app()->environment('local'))
+                            <div class="mt-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                                <details class="group">
+                                    <summary class="cursor-pointer text-sm font-medium text-yellow-800 dark:text-yellow-200 group-open:mb-3">
+                                        Debug Information (Development Mode)
+                                    </summary>
+                                    <div class="space-y-3">
+                                        <pre class="bg-white dark:bg-zinc-800 p-3 rounded text-xs">Story ID: {{ $storyId }}
 Story Name: {{ $storyName }}
 Data Type: {{ gettype($storyData) }}
-Data Keys: {{ is_array($storyData) ? implode(', ', array_keys($storyData)) : 'not array' }}</pre>
+Data Keys: {{ is_array($storyData) ? implode(', ', array_keys($storyData)) : 'not array' }}
+Extracted Steps: {{ count($fallbackSteps) }}</pre>
+                                        
+                                        <div class="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded p-3">
+                                            <h4 class="text-xs font-medium mb-2">Raw Story Data</h4>
+                                            <pre class="text-xs overflow-x-auto">{{ json_encode($storyData, JSON_PRETTY_PRINT) }}</pre>
+                                        </div>
+                                    </div>
+                                </details>
                             </div>
-                            
-                            <div class="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
-                                <h3 class="text-lg font-semibold mb-2">Raw Story Data</h3>
-                                <pre class="bg-white dark:bg-zinc-900 p-3 rounded text-xs overflow-x-auto">{{ json_encode($storyData, JSON_PRETTY_PRINT) }}</pre>
-                            </div>
-                            
-                        </div>
+                        @endif
                     @endif
 
                     <!-- Important Notice -->
