@@ -47,6 +47,60 @@
                 </div>
                 
                 <div class="p-6">
+                    <!-- Debug output for jacking and lifting points story -->
+                    @if(app()->environment('local') && $storyId == 319015378)
+                        <div class="mb-6 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                            <details class="group">
+                                <summary class="cursor-pointer text-sm font-medium text-purple-800 dark:text-purple-200 group-open:mb-3">
+                                    🔍 Debug: Full API Response for Jacking Story {{ $storyId }}
+                                </summary>
+                                <div class="space-y-3">
+                                    <h4 class="text-xs font-medium text-purple-800 dark:text-purple-200">Complete Story Data Structure:</h4>
+                                    <pre class="bg-white dark:bg-purple-950 p-3 rounded text-xs overflow-x-auto max-h-96 border">{{ json_encode($storyData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                    
+                                    <h4 class="text-xs font-medium text-purple-800 dark:text-purple-200">Story Metadata:</h4>
+                                    <pre class="bg-white dark:bg-purple-950 p-3 rounded text-xs overflow-x-auto border">{{ json_encode($storyMetadata, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                    
+                                    <h4 class="text-xs font-medium text-purple-800 dark:text-purple-200">Looking for Image Fields:</h4>
+                                    <pre class="bg-white dark:bg-purple-950 p-3 rounded text-xs border">
+@php
+$imageFields = [];
+function findImageFields($data, $path = '') {
+    global $imageFields;
+    if (is_array($data)) {
+        foreach ($data as $key => $value) {
+            $currentPath = $path ? $path . '.' . $key : $key;
+            if (is_string($key) && (
+                stripos($key, 'image') !== false || 
+                stripos($key, 'diagram') !== false || 
+                stripos($key, 'picture') !== false || 
+                stripos($key, 'photo') !== false ||
+                stripos($key, 'graphic') !== false ||
+                stripos($key, 'illustration') !== false ||
+                stripos($key, 'url') !== false ||
+                stripos($key, 'src') !== false ||
+                stripos($key, 'href') !== false ||
+                stripos($key, 'link') !== false
+            )) {
+                $imageFields[$currentPath] = $value;
+            }
+            if (is_array($value)) {
+                findImageFields($value, $currentPath);
+            }
+        }
+    }
+}
+findImageFields($storyData);
+echo "Found potential image fields:\n";
+foreach ($imageFields as $path => $value) {
+    echo "$path: " . (is_string($value) ? $value : json_encode($value)) . "\n";
+}
+@endphp</pre>
+                                </div>
+                            </details>
+                        </div>
+                    @endif
+                    
                     @php
                         $contentSections = [];
                         
