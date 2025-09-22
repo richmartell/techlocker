@@ -62,6 +62,14 @@ Route::get('/vehicle-information/{carType}/{carTypeGroup}/{subject}', [VehicleDa
 Route::get('/vehicle-data/lubricants/{carType}/{carTypeGroup}', [VehicleDataController::class, 'lubricants'])->middleware(['auth', 'verified'])->name('vehicle-lubricants');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Customer Management Routes
+    Route::get('/customers', \App\Livewire\Customers\Index::class)->name('customers.index');
+    Route::get('/customers/{customer}', \App\Livewire\Customers\Show::class)->name('customers.show');
+    Route::post('/customers/{customer}/restore', function (\App\Models\Customer $customer) {
+        $customer->restore();
+        return redirect()->route('customers.show', $customer)->with('success', 'Customer restored successfully.');
+    })->name('customers.restore');
+
     Route::redirect('settings', 'settings/profile');
 
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');

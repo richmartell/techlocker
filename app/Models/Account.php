@@ -45,4 +45,20 @@ class Account extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    /**
+     * Get the customers for the account.
+     */
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class);
+    }
+
+    /**
+     * Get the vehicles for the account.
+     */
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(Vehicle::class);
+    }
 } 

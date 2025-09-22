@@ -10,6 +10,7 @@ class Vehicle extends Model
     use HasFactory;
 
     protected $fillable = [
+        'account_id',
         'registration',
         'name',
         'vehicle_make_id',
@@ -59,6 +60,36 @@ class Vehicle extends Model
         'car_type_identified_at' => 'datetime',
     ];
 
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Global scope to filter by current user's account
+        static::addGlobalScope('account', function ($builder) {
+            if (auth()->check() && auth()->user()->account_id) {
+                $builder->where('account_id', auth()->user()->account_id);
+            }
+        });
+
+        static::creating(function ($vehicle) {
+            // Automatically set account_id when creating
+            if (auth()->check() && auth()->user()->account_id && !$vehicle->account_id) {
+                $vehicle->account_id = auth()->user()->account_id;
+            }
+        });
+    }
+
+    /**
+     * Get account relationship.
+     */
+    public function account(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account::class);
+    }
+
     public function make(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(\App\Models\VehicleMake::class, 'vehicle_make_id');
@@ -103,5 +134,40 @@ class Vehicle extends Model
     {
         return $this->hasCarTypeIdentification() && 
                $this->car_type_identified_at->diffInHours(now()) < 24;
+    }
+
+    /**
+     * Get customers relationship.
+     */
+    public function customers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Customer::class, 'customer_vehicle')
+            ->withPivot(['relationship', 'owned_from', 'owned_to'])
+            ->withTimestamps()
+            ->orderBy('customer_vehicle.created_at', 'desc');
+    }
+
+    /**
+     * Get current customers (where owned_to is null).
+     */
+    public function currentCustomers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->customers()->wherePivotNull('owned_to');
+    }
+
+    /**
+     * Get current owners.
+     */
+    public function currentOwners(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->currentCustomers()->wherePivot('relationship', 'owner');
+    }
+
+    /**
+     * Get the primary owner (first current owner).
+     */
+    public function primaryOwner(): ?\App\Models\Customer
+    {
+        return $this->currentOwners()->first();
     }
 } 

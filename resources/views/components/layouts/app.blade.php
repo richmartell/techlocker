@@ -16,6 +16,7 @@
             <!-- Main Navigation -->
             <flux:navbar class="-mb-px max-lg:hidden">
                 <flux:navbar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Home</flux:navbar.item>
+                <flux:navbar.item icon="users" :href="route('customers.index')" :current="request()->routeIs('customers.*')" wire:navigate>Customers</flux:navbar.item>
                 <flux:navbar.item icon="magnifying-glass" :href="route('vehicle-lookup')" :current="request()->routeIs('vehicle-lookup')" wire:navigate>Vehicle Search</flux:navbar.item>
             </flux:navbar>
             
@@ -60,6 +61,7 @@
             
             <flux:navlist variant="outline">
                 <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Home</flux:navlist.item>
+                <flux:navlist.item icon="users" :href="route('customers.index')" :current="request()->routeIs('customers.*')" wire:navigate>Customers</flux:navlist.item>
                 <flux:navlist.item icon="magnifying-glass" :href="route('vehicle-lookup')" :current="request()->routeIs('vehicle-lookup')" wire:navigate>Vehicle Search</flux:navlist.item>
             </flux:navlist>
             
