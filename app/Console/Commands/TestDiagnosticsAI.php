@@ -14,7 +14,7 @@ class TestDiagnosticsAI extends Command
      *
      * @var string
      */
-    protected $signature = 'diagnostics:test {registration=MS02MUD} {message="What is the engine capacity of this car?"}';
+    protected $signature = 'diagnostics:test {registration=MS02MUD} {message="Vehicle has intermittent misfire on cylinder 3, P0303 stored. What are the diagnostic steps?"}';
 
     /**
      * The console command description.
@@ -80,91 +80,47 @@ class TestDiagnosticsAI extends Command
             $this->info("✓ OpenAI API key configured");
             $this->info("✓ Model: {$model}");
 
-            // Test 4: Simulate the diagnostics request
-            $this->info("Simulating diagnostics request...");
+            // Test 4: Use the actual diagnostics controller logic
+            $this->info("Testing with actual DiagnosticsController logic...");
             
-            $vehicleData = [
-                'registration' => $vehicle->registration,
-                'make' => $vehicle->make?->name ?? 'Unknown',
-                'model' => $vehicle->model?->name ?? 'Unknown',
-                'year' => $vehicle->year_of_manufacture ?? 'Unknown',
-                'engine' => $vehicle->engine_capacity ? $vehicle->engine_capacity . 'cc' : 'Unknown',
-            ];
-
-            // Build system message like the controller does
-            $systemMessage = "You are DiagnosticsAI, an expert automotive diagnostic assistant specializing in vehicle issues. " .
-                            "You're currently helping with a {$vehicleData['year']} {$vehicleData['make']} {$vehicleData['model']} " .
-                            "with a {$vehicleData['engine']} engine (registration: {$vehicleData['registration']}). " .
-                            "Provide helpful, accurate diagnostic information based on the symptoms described. " .
-                            "Be concise but thorough. Organize your response with clear sections when appropriate. " .
-                            "Be conversational but focus on technical accuracy.";
-
-            if ($haynesProData) {
-                $technicalData = $haynesProData->getFormattedDataForAI();
-                if (!empty($technicalData)) {
-                    $systemMessage .= "\n\nYou have access to the following comprehensive technical data for this specific vehicle:\n\n" . substr($technicalData, 0, 500) . "...";
-                }
-            }
-
-            $this->info("System message length: " . strlen($systemMessage) . " characters");
+            $controller = new \App\Http\Controllers\DiagnosticsController();
+            $request = new \Illuminate\Http\Request([
+                'message' => $message,
+                'registration' => $registration
+            ]);
             
-            // Test OpenAI API call
-            $this->info("Testing OpenAI API call...");
+            // Manually set required headers
+            $request->headers->set('X-Session-ID', 'test_' . uniqid());
+            $request->server->set('REMOTE_ADDR', '127.0.0.1');
+            $request->headers->set('User-Agent', 'Test Command');
+            
             $startTime = microtime(true);
             
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
-                'Content-Type' => 'application/json',
-            ])->timeout(30)->post('https://api.openai.com/v1/chat/completions', [
-                'model' => $model,
-                'messages' => [
-                    ['role' => 'system', 'content' => $systemMessage],
-                    ['role' => 'user', 'content' => $message]
-                ],
-                'temperature' => 0.7,
-                'max_tokens' => 500, // Reduced for testing
-            ]);
-
-            $responseTime = round((microtime(true) - $startTime) * 1000);
-
-            if ($response->successful()) {
-                $responseData = $response->json();
-                $aiResponse = $responseData['choices'][0]['message']['content'];
+            try {
+                $response = $controller->processMessage($request);
+                $responseTime = round((microtime(true) - $startTime) * 1000);
                 
-                $this->info("✓ OpenAI API call successful");
-                $this->info("Response time: {$responseTime}ms");
-                $this->line('');
-                $this->info("AI Response:");
-                $this->line(str_repeat('-', 50));
-                $this->line($aiResponse);
-                $this->line(str_repeat('-', 50));
+                if ($response->getStatusCode() === 200) {
+                    $responseData = json_decode($response->getContent(), true);
+                    $aiResponse = $responseData['message'] ?? 'No message returned';
+                    
+                    $this->info("✓ DiagnosticsController call successful");
+                    $this->info("Response time: {$responseTime}ms");
+                    $this->line('');
+                    $this->info("AI Response:");
+                    $this->line(str_repeat('-', 50));
+                    $this->line($aiResponse);
+                    $this->line(str_repeat('-', 50));
 
-                // Test logging
-                $this->info("Testing logging...");
-                $logData = DiagnosticsAiLog::logInteraction([
-                    'user_message' => $message,
-                    'ai_response' => $aiResponse,
-                    'session_id' => 'test_' . uniqid(),
-                    'vehicle_registration' => $registration,
-                    'vehicle_data' => $vehicleData,
-                    'haynes_car_type_id' => $haynesProData?->car_type_id,
-                    'haynes_data_available' => !is_null($haynesProData),
-                    'ai_model' => $model,
-                    'response_time_ms' => $responseTime,
-                    'temperature' => 0.7,
-                    'max_tokens' => 500,
-                    'status' => 'success',
-                    'ip_address' => '127.0.0.1',
-                    'user_agent' => 'Test Command',
-                ]);
-
-                $this->info("✓ Logging successful (Log ID: {$logData->id})");
-                $this->info("✓ All tests passed!");
-
-            } else {
-                $this->error("✗ OpenAI API call failed");
-                $this->error("Status: " . $response->status());
-                $this->error("Response: " . $response->body());
+                    $this->info("✓ All tests passed!");
+                } else {
+                    $this->error("✗ DiagnosticsController call failed");
+                    $this->error("Status: " . $response->getStatusCode());
+                    $this->error("Response: " . $response->getContent());
+                }
+            } catch (\Exception $e) {
+                $this->error("✗ DiagnosticsController call failed with exception");
+                $this->error("Error: " . $e->getMessage());
             }
 
         } catch (\Exception $e) {

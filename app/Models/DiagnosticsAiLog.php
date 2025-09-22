@@ -30,6 +30,7 @@ class DiagnosticsAiLog extends Model
         'temperature',
         'max_tokens',
         'status',
+        'data_source',
         'error_message',
         'fallback_reason',
         'ip_address',
@@ -103,6 +104,30 @@ class DiagnosticsAiLog extends Model
     }
 
     /**
+     * Scope to get logs that used Haynes-only responses.
+     */
+    public function scopeHaynesOnly($query)
+    {
+        return $query->where('data_source', 'haynes_only');
+    }
+
+    /**
+     * Scope to get logs that used AI with Haynes context.
+     */
+    public function scopeAiWithHaynes($query)
+    {
+        return $query->where('data_source', 'ai_with_haynes');
+    }
+
+    /**
+     * Scope to get logs by data source.
+     */
+    public function scopeByDataSource($query, string $dataSource)
+    {
+        return $query->where('data_source', $dataSource);
+    }
+
+    /**
      * Scope to get recent logs (last 24 hours).
      */
     public function scopeRecent($query)
@@ -148,16 +173,40 @@ class DiagnosticsAiLog extends Model
     public static function getPerformanceMetrics(): array
     {
         $logs = static::whereNotNull('response_time_ms');
+        $totalCount = static::count();
+        
+        if ($totalCount === 0) {
+            return [
+                'total_interactions' => 0,
+                'average_response_time' => 0,
+                'min_response_time' => 0,
+                'max_response_time' => 0,
+                'success_rate' => 0,
+                'error_rate' => 0,
+                'fallback_rate' => 0,
+                'haynes_data_usage' => 0,
+                'haynes_only_rate' => 0,
+                'ai_with_haynes_rate' => 0,
+                'data_source_breakdown' => [],
+            ];
+        }
         
         return [
-            'total_interactions' => static::count(),
+            'total_interactions' => $totalCount,
             'average_response_time' => $logs->avg('response_time_ms'),
             'min_response_time' => $logs->min('response_time_ms'),
             'max_response_time' => $logs->max('response_time_ms'),
-            'success_rate' => static::where('status', 'success')->count() / static::count() * 100,
-            'error_rate' => static::where('status', 'error')->count() / static::count() * 100,
-            'fallback_rate' => static::where('status', 'fallback')->count() / static::count() * 100,
-            'haynes_data_usage' => static::where('haynes_data_available', true)->count() / static::count() * 100,
+            'success_rate' => static::where('status', 'success')->count() / $totalCount * 100,
+            'error_rate' => static::where('status', 'error')->count() / $totalCount * 100,
+            'fallback_rate' => static::where('status', 'fallback')->count() / $totalCount * 100,
+            'haynes_data_usage' => static::where('haynes_data_available', true)->count() / $totalCount * 100,
+            'haynes_only_rate' => static::where('data_source', 'haynes_only')->count() / $totalCount * 100,
+            'ai_with_haynes_rate' => static::where('data_source', 'ai_with_haynes')->count() / $totalCount * 100,
+            'data_source_breakdown' => static::selectRaw('data_source, COUNT(*) as count')
+                ->whereNotNull('data_source')
+                ->groupBy('data_source')
+                ->pluck('count', 'data_source')
+                ->toArray(),
         ];
     }
 
