@@ -5,15 +5,16 @@ namespace App\Livewire\Customers;
 use App\Models\Customer;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
+use Livewire\Component;
 
+#[Layout('components.layouts.app')]
 class Show extends Component
 {
     use AuthorizesRequests;
 
     public Customer $customer;
-    public string $activeTab = 'profile';
     public bool $showEditModal = false;
     public bool $showLinkVehicleModal = false;
     public bool $showUnlinkConfirmModal = false;
@@ -59,6 +60,20 @@ class Show extends Component
     public function closeEditModal()
     {
         $this->showEditModal = false;
+    }
+
+    #[On('customerSaved')]
+    public function handleCustomerSaved()
+    {
+        $this->closeEditModal();
+        $this->customer->refresh(); // Refresh customer data
+        session()->flash('success', 'Customer updated successfully.');
+    }
+
+    #[On('modalClosed')]
+    public function handleModalClosed()
+    {
+        $this->closeEditModal();
     }
 
     public function openLinkVehicleModal()
@@ -196,19 +211,6 @@ class Show extends Component
         $this->notesChanged = ($this->notes !== ($this->customer->notes ?? ''));
     }
 
-    public function updateLastContact()
-    {
-        $this->authorize('update', $this->customer);
-        
-        try {
-            $this->customer->update(['last_contact_at' => now()]);
-            $this->customer->refresh();
-            
-            session()->flash('success', 'Last contact updated to now.');
-        } catch (\Exception $e) {
-            session()->flash('error', 'Failed to update last contact: ' . $e->getMessage());
-        }
-    }
 
     private function resetVehicleLinkingForm()
     {
@@ -218,7 +220,18 @@ class Show extends Component
         $this->ownedTo = null;
     }
 
-    #[Layout('components.layouts.app')]
+    public function getTagColor(string $tag): string
+    {
+        return match (strtolower($tag)) {
+            'vip' => 'amber',
+            'trade' => 'blue',
+            'fleet' => 'purple',
+            'regular' => 'green',
+            'new' => 'cyan',
+            default => 'zinc',
+        };
+    }
+
     public function render()
     {
         return view('livewire.customers.show');

@@ -39,12 +39,33 @@ class Upsert extends Component
         'phone.max' => 'Phone number cannot exceed 30 characters.',
     ];
 
-    public function mount(): void
+    public function mount(?Customer $customer = null): void
     {
-        // Create mode for modal opened from index
-        $this->authorize('create', Customer::class);
-        $this->isEditing = false;
-        $this->showModal = true;
+        \Log::info('🧪 UPSERT MOUNT - customer provided: ' . ($customer ? 'YES (ID: ' . $customer->id . ')' : 'NO'));
+        
+        try {
+            if ($customer) {
+                // Edit mode - customer passed from Show page
+                $this->authorize('update', $customer);
+                $this->customer = $customer;
+                $this->isEditing = true;
+                $this->loadCustomerData();
+                \Log::info('Upsert - edit mode set for customer: ' . $customer->full_name);
+            } else {
+                // Create mode - no customer passed (from Index page)
+                $this->authorize('create', Customer::class);
+                $this->isEditing = false;
+                \Log::info('Upsert - create mode set');
+            }
+            
+            $this->showModal = true;
+            \Log::info('Upsert component mounted successfully - isEditing: ' . ($this->isEditing ? 'true' : 'false'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Upsert mount error: ' . $e->getMessage());
+            session()->flash('error', 'Failed to load customer form: ' . $e->getMessage());
+            $this->showModal = false;
+        }
     }
 
     public function loadCustomerData()

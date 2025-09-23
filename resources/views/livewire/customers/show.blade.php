@@ -42,10 +42,7 @@
                 </div>
             </div>
             
-            <div class="flex flex-col sm:flex-row gap-3">
-                <flux:button wire:click="updateLastContact" variant="ghost" icon="clock" size="sm">
-                    Update Contact
-                </flux:button>
+            <div>
                 <flux:button wire:click="openEditModal" variant="primary" icon="pencil" size="sm">
                     Edit Customer
                 </flux:button>
@@ -94,20 +91,20 @@
 
     {{-- Tabs Navigation --}}
     <flux:card>
-        <flux:tabs wire:model="activeTab" class="border-b border-zinc-200 dark:border-zinc-700">
-            <flux:tab name="profile" icon="user">Profile</flux:tab>
-            <flux:tab name="vehicles" icon="truck">Vehicles</flux:tab>
-            <flux:tab name="timeline" icon="clock">Timeline</flux:tab>
-        </flux:tabs>
+        <flux:tab.group default="profile">
+            <flux:tabs class="border-b border-zinc-200 dark:border-zinc-700">
+                <flux:tab name="profile" icon="user">Profile</flux:tab>
+                <flux:tab name="vehicles" icon="truck">Vehicles ({{ $customer->vehicles->count() }})</flux:tab>
+                <flux:tab name="timeline" icon="clock">Timeline</flux:tab>
+            </flux:tabs>
 
-        <div class="p-6">
-            {{-- Profile Tab --}}
-            @if($activeTab === 'profile')
+            {{-- Profile Tab Panel --}}
+            <flux:tab.panel name="profile" class="p-6">
                 <div class="space-y-6">
-                    {{-- Basic Information --}}
-                    <div>
-                        <flux:heading size="lg" class="mb-4">Customer Information</flux:heading>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {{-- Basic Information --}}
+                        <div>
+                            <flux:heading size="lg" class="mb-4">Customer Information</flux:heading>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">First Name</label>
@@ -183,10 +180,10 @@
                         @endif
                     </div>
                 </div>
-            @endif
+                </flux:tab.panel>
 
-            {{-- Vehicles Tab --}}
-            @if($activeTab === 'vehicles')
+            {{-- Vehicles Tab Panel --}}
+            <flux:tab.panel name="vehicles" class="p-6">
                 <div class="space-y-6">
                     <div class="flex items-center justify-between">
                         <flux:heading size="lg">Linked Vehicles</flux:heading>
@@ -304,10 +301,10 @@
                         </div>
                     @endif
                 </div>
-            @endif
+                </flux:tab.panel>
 
-            {{-- Timeline Tab --}}
-            @if($activeTab === 'timeline')
+            {{-- Timeline Tab Panel --}}
+            <flux:tab.panel name="timeline" class="p-6">
                 <div class="space-y-6">
                     <flux:heading size="lg">Customer Timeline</flux:heading>
                     
@@ -365,9 +362,8 @@
                             </div>
                         @endif
                     </div>
-                </div>
-            @endif
-        </div>
+                </flux:tab.panel>
+        </flux:tab.group>
     </flux:card>
 
     {{-- Link Vehicle Modal --}}
