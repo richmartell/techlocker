@@ -76,6 +76,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
     
+    // Labour Settings Route
+    Route::get('settings/labour', \App\Livewire\Settings\Labour::class)->name('settings.labour');
+    
     // API Settings Routes
     Route::get('settings/api', [ApiSettingsController::class, 'show'])->name('settings.api');
     Route::post('settings/api', [ApiSettingsController::class, 'save'])->name('settings.api.save');
