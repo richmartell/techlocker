@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Vehicle extends Model
 {
@@ -100,6 +102,11 @@ class Vehicle extends Model
         return $this->belongsTo(\App\Models\VehicleModel::class, 'vehicle_model_id');
     }
 
+    public function jobs(): HasMany
+    {
+        return $this->hasMany(VehicleJob::class, 'vehicle_id');
+    }
+
     /**
      * Get the available subjects as an array
      */
@@ -139,7 +146,7 @@ class Vehicle extends Model
     /**
      * Get customers relationship.
      */
-    public function customers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function customers(): BelongsToMany
     {
         return $this->belongsToMany(\App\Models\Customer::class, 'customer_vehicle')
             ->withPivot(['relationship', 'owned_from', 'owned_to'])

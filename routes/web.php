@@ -139,7 +139,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
     // Keep legacy route for backwards compatibility
     Route::get('/service-indicator-reset', [TechnicalInformationController::class, 'serviceIndicatorReset'])->name('maintenance.service-indicator-reset');
-});
+    });
+
+    // Workshop Jobs (outside of vehicle prefix group)
+    Route::get('/workshop/jobs', \App\Livewire\Jobs\Index::class)->name('workshop.jobs.index');
+    Route::get('/workshop/jobs/create', \App\Livewire\Jobs\Upsert::class)->name('workshop.jobs.create');
+    Route::get('/workshop/jobs/{job}', \App\Livewire\Jobs\Show::class)->name('workshop.jobs.show');
+    Route::get('/workshop/jobs/{job}/edit', \App\Livewire\Jobs\Upsert::class)->name('workshop.jobs.edit');
+
+    // Technicians (under settings)
+    Route::get('/settings/technicians', \App\Livewire\Settings\Technicians\Index::class)->name('settings.technicians.index');
+    Route::get('/settings/technicians/create', \App\Livewire\Settings\Technicians\Upsert::class)->name('settings.technicians.create');
+    Route::get('/settings/technicians/{technician}', \App\Livewire\Settings\Technicians\Show::class)->name('settings.technicians.show');
+    Route::get('/settings/technicians/{technician}/edit', \App\Livewire\Settings\Technicians\Upsert::class)->name('settings.technicians.edit');
 });
 
 require __DIR__.'/auth.php';
