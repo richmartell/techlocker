@@ -141,11 +141,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/service-indicator-reset', [TechnicalInformationController::class, 'serviceIndicatorReset'])->name('maintenance.service-indicator-reset');
     });
 
-    // Workshop Jobs (outside of vehicle prefix group)
-    Route::get('/workshop/jobs', \App\Livewire\Jobs\Index::class)->name('workshop.jobs.index');
-    Route::get('/workshop/jobs/create', \App\Livewire\Jobs\Upsert::class)->name('workshop.jobs.create');
-    Route::get('/workshop/jobs/{job}', \App\Livewire\Jobs\Show::class)->name('workshop.jobs.show');
-    Route::get('/workshop/jobs/{job}/edit', \App\Livewire\Jobs\Upsert::class)->name('workshop.jobs.edit');
+    // Jobs routes  
+    Route::get('/jobs', \App\Livewire\Jobs\Index::class)->name('workshop.jobs.index');
+    Route::get('/jobs/create', \App\Livewire\Jobs\Upsert::class)->name('workshop.jobs.create');
+    Route::get('/jobs/{job}/edit', \App\Livewire\Jobs\Upsert::class)
+        ->whereUlid('job')
+        ->name('workshop.jobs.edit');
+    Route::get('/jobs/{job}', \App\Livewire\Jobs\Show::class)
+        ->whereUlid('job')
+        ->name('workshop.jobs.show');
 
     // Technicians (under settings)
     Route::get('/settings/technicians', \App\Livewire\Settings\Technicians\Index::class)->name('settings.technicians.index');

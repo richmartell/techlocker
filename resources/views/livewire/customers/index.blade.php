@@ -142,7 +142,7 @@
                     
                     <flux:table.rows>
                         @foreach($customers as $customer)
-                            <flux:table.row class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                            <flux:table.row class="group hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                                 {{-- Name Column --}}
                                 <flux:table.cell class="font-medium">
                                     <div class="flex items-center space-x-3">
@@ -227,16 +227,15 @@
                                 
                                 {{-- Actions Column --}}
                                 <flux:table.cell>
-                                    <div class="flex items-center space-x-2">
-                                        {{-- View Button --}}
-                                        <flux:button 
-                                            wire:navigate 
+                                    <div class="flex items-center justify-end">
+                                        <flux:button
+                                            wire:navigate
                                             href="{{ route('customers.show', $customer) }}"
-                                            size="sm" 
-                                            variant="primary"
+                                            size="sm"
+                                            class="opacity-0 group-hover:opacity-100 transition-opacity !bg-zinc-900 !text-white hover:!bg-zinc-800 !border-zinc-900"
                                             icon="eye"
                                         >
-                                            View Details
+                                            View
                                         </flux:button>
                                     </div>
                                 </flux:table.cell>

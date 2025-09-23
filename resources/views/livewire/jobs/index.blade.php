@@ -10,18 +10,6 @@
                 <flux:button href="{{ route('workshop.jobs.create') }}" wire:navigate icon="plus" variant="primary">New Job</flux:button>
             </div>
         </div>
-
-        <div class="mt-4 flex flex-wrap gap-3">
-            <flux:select wire:model.live="status" placeholder="Status" class="w-40">
-                <flux:select.option value="all">All</flux:select.option>
-                <flux:select.option value="scheduled">Scheduled</flux:select.option>
-                <flux:select.option value="in_progress">In progress</flux:select.option>
-                <flux:select.option value="completed">Completed</flux:select.option>
-                <flux:select.option value="cancelled">Cancelled</flux:select.option>
-            </flux:select>
-            <flux:input type="date" wire:model.live="dateFrom" placeholder="From" />
-            <flux:input type="date" wire:model.live="dateTo" placeholder="To" />
-        </div>
     </flux:card>
 
     <flux:card>
@@ -29,26 +17,38 @@
             <div class="overflow-x-auto">
                 <flux:table>
                     <flux:table.columns>
-                        <flux:table.column sortable wire:click="$set('sortBy', 'job_number')">Job #</flux:table.column>
-                        <flux:table.column>Title</flux:table.column>
+                        <flux:table.column sortable wire:click="$set('sortBy', 'start_at')">Date</flux:table.column>
+                        <flux:table.column sortable wire:click="$set('sortBy', 'title')">Name</flux:table.column>
                         <flux:table.column>Vehicle</flux:table.column>
-                        <flux:table.column>Status</flux:table.column>
-                        <flux:table.column sortable wire:click="$set('sortBy', 'start_at')">Start</flux:table.column>
-                        <flux:table.column sortable wire:click="$set('sortBy', 'end_at')">End</flux:table.column>
+                        <flux:table.column>Customer</flux:table.column>
+                        <flux:table.column sortable wire:click="$set('sortBy', 'status')">Status</flux:table.column>
                         <flux:table.column>Technicians</flux:table.column>
                         <flux:table.column>Actions</flux:table.column>
                     </flux:table.columns>
                     <flux:table.rows>
                         @foreach($jobs as $job)
-                            <flux:table.row>
-                                <flux:table.cell class="font-mono">{{ $job->job_number }}</flux:table.cell>
-                                <flux:table.cell>{{ $job->title }}</flux:table.cell>
+                            <flux:table.row class="group">
+                                <flux:table.cell class="text-sm">
+                                    {{ $job->start_at?->format('d/m/y') ?? 'Not set' }}
+                                </flux:table.cell>
+                                <flux:table.cell class="font-medium">{{ $job->title }}</flux:table.cell>
                                 <flux:table.cell>
                                     @if($job->vehicle)
-                                        <a href="{{ route('vehicle-details', $job->vehicle->registration) }}" class="text-blue-600" wire:navigate>
-                                            {{ $job->vehicle->registration }}
-                                        </a>
+                                        <div class="font-medium">{{ $job->vehicle->registration }}</div>
                                         <div class="text-xs text-zinc-500">{{ $job->vehicle->make }} {{ $job->vehicle->model }}</div>
+                                    @else
+                                        <span class="text-zinc-400">No vehicle</span>
+                                    @endif
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    @if($job->vehicle && $job->vehicle->currentCustomers->isNotEmpty())
+                                        @php
+                                            $customer = $job->vehicle->currentCustomers->first();
+                                            $initial = strtoupper(substr($customer->first_name, 0, 1));
+                                        @endphp
+                                        <span class="text-sm">{{ $initial }} {{ $customer->last_name }}</span>
+                                    @else
+                                        <span class="text-zinc-400 text-sm">No customer</span>
                                     @endif
                                 </flux:table.cell>
                                 <flux:table.cell>
@@ -56,15 +56,21 @@
                                         {{ str($job->status)->headline() }}
                                     </flux:badge>
                                 </flux:table.cell>
-                                <flux:table.cell class="text-sm text-zinc-500">{{ $job->start_at?->format('Y-m-d H:i') }}</flux:table.cell>
-                                <flux:table.cell class="text-sm text-zinc-500">{{ $job->end_at?->format('Y-m-d H:i') }}</flux:table.cell>
                                 <flux:table.cell class="text-sm">
-                                    {{ $job->technicians->pluck('full_name')->join(', ') }}
+                                    @if($job->technicians->isNotEmpty())
+                                        @foreach($job->technicians as $technician)
+                                            @php
+                                                $techInitial = strtoupper(substr($technician->first_name, 0, 1));
+                                            @endphp
+                                            <span>{{ $techInitial }} {{ $technician->last_name }}</span>@if(!$loop->last), @endif
+                                        @endforeach
+                                    @else
+                                        <span class="text-zinc-400">No technicians</span>
+                                    @endif
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <div class="flex gap-2">
-                                        <flux:button href="{{ route('workshop.jobs.show', $job) }}" wire:navigate size="sm" icon="eye">View</flux:button>
-                                        <flux:button href="{{ route('workshop.jobs.edit', $job) }}" wire:navigate size="sm" variant="ghost" icon="pencil">Edit</flux:button>
+                                    <div class="flex justify-end">
+                                        <flux:button href="{{ route('workshop.jobs.show', $job) }}" wire:navigate size="sm" icon="eye" class="opacity-0 group-hover:opacity-100 transition-opacity !bg-zinc-900 !text-white hover:!bg-zinc-800 !border-zinc-900">View</flux:button>
                                     </div>
                                 </flux:table.cell>
                             </flux:table.row>

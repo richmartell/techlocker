@@ -12,28 +12,17 @@ class Index extends Component
     use WithPagination, AuthorizesRequests;
 
     public string $search = '';
-    public string $status = 'all';
-    public ?string $technicianId = null;
-    public ?string $dateFrom = null;
-    public ?string $dateTo = null;
-
     public string $sortBy = 'start_at';
     public string $sortDirection = 'desc';
 
     protected $queryString = [
         'search' => ['except' => ''],
-        'status' => ['except' => 'all'],
-        'technicianId' => ['except' => null],
-        'dateFrom' => ['except' => null],
-        'dateTo' => ['except' => null],
         'sortBy' => ['except' => 'start_at'],
         'sortDirection' => ['except' => 'desc'],
         'page' => ['except' => 1],
     ];
 
     public function updatingSearch() { $this->resetPage(); }
-    public function updatingStatus() { $this->resetPage(); }
-    public function updatingTechnicianId() { $this->resetPage(); }
 
     public function sort(string $field): void
     {
@@ -47,24 +36,7 @@ class Index extends Component
 
     public function getJobsProperty()
     {
-        $q = VehicleJob::query()->with(['vehicle', 'technicians']);
-
-        if ($this->status !== 'all') {
-            $q->where('status', $this->status);
-        }
-
-        if ($this->technicianId) {
-            $q->whereHas('technicians', function ($sub) {
-                $sub->where('technicians.id', $this->technicianId);
-            });
-        }
-
-        if ($this->dateFrom) {
-            $q->whereDate('start_at', '>=', $this->dateFrom);
-        }
-        if ($this->dateTo) {
-            $q->whereDate('end_at', '<=', $this->dateTo);
-        }
+        $q = VehicleJob::query()->with(['vehicle.currentCustomers', 'technicians']);
 
         if ($this->search) {
             $term = '%' . trim($this->search) . '%';
@@ -72,6 +44,9 @@ class Index extends Component
                 $sub->where('job_number', 'like', $term)
                     ->orWhere('title', 'like', $term)
                     ->orWhereHas('vehicle', fn($v) => $v->where('registration', 'like', $term))
+                    ->orWhereHas('vehicle.currentCustomers', function ($c) use ($term) {
+                        $c->where('first_name', 'like', $term)->orWhere('last_name', 'like', $term);
+                    })
                     ->orWhereHas('technicians', function ($t) use ($term) {
                         $t->where('first_name', 'like', $term)->orWhere('last_name', 'like', $term);
                     });
