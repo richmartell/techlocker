@@ -103,17 +103,11 @@
                             </p>
                         </div>
 
-                        @if($account->trial_status)
+                        @if($account->status)
                         <div>
-                            <label class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Trial Status</label>
+                            <label class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Account Status</label>
                             <p class="mt-1">
-                                @if($account->isOnTrial())
-                                    <flux:badge color="yellow">Active</flux:badge>
-                                @elseif($account->hasExpiredTrial())
-                                    <flux:badge color="red">Expired</flux:badge>
-                                @elseif($account->trial_status === 'converted')
-                                    <flux:badge color="green">Converted</flux:badge>
-                                @endif
+                                <flux:badge color="{{ $account->status_color }}">{{ $account->status_label }}</flux:badge>
                             </p>
                         </div>
 

@@ -13,11 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             Route::middleware('web')
                 ->group(base_path('routes/admin.php'));
+            Route::middleware('web')
+                ->group(base_path('routes/reseller.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminAuthenticate::class,
+            'reseller' => \App\Http\Middleware\ResellerAuthenticate::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

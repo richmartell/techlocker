@@ -16,7 +16,7 @@ class Index extends Component
     public $search = '';
 
     #[Url]
-    public $trialStatus = '';
+    public $statusFilter = '';
 
     #[Url]
     public $planFilter = '';
@@ -32,7 +32,7 @@ class Index extends Component
         $this->resetPage();
     }
 
-    public function updatingTrialStatus()
+    public function updatingStatusFilter()
     {
         $this->resetPage();
     }
@@ -62,22 +62,24 @@ class Index extends Component
                         ->orWhere('company_email', 'like', '%' . $this->search . '%');
                 });
             })
-            ->when($this->trialStatus, function ($query) {
-                if ($this->trialStatus === 'active') {
-                    $query->where('trial_status', 'active')
+            ->when($this->statusFilter, function ($query) {
+                if ($this->statusFilter === 'trial') {
+                    $query->where('status', 'trial')
                         ->where('trial_ends_at', '>', now());
-                } elseif ($this->trialStatus === 'expired') {
+                } elseif ($this->statusFilter === 'trial_expired') {
                     $query->where(function ($q) {
-                        $q->where('trial_status', 'expired')
+                        $q->where('status', 'trial_expired')
                             ->orWhere(function ($subQ) {
-                                $subQ->where('trial_status', 'active')
+                                $subQ->where('status', 'trial')
                                     ->where('trial_ends_at', '<=', now());
                             });
                     });
-                } elseif ($this->trialStatus === 'converted') {
-                    $query->where('trial_status', 'converted');
-                } elseif ($this->trialStatus === 'none') {
-                    $query->whereNull('trial_status');
+                } elseif ($this->statusFilter === 'active') {
+                    $query->where('status', 'active');
+                } elseif ($this->statusFilter === 'churned') {
+                    $query->where('status', 'churned');
+                } elseif ($this->statusFilter === 'none') {
+                    $query->whereNull('status');
                 }
             })
             ->when($this->planFilter, function ($query) {

@@ -18,12 +18,13 @@
                     />
                 </div>
                 <div>
-                    <flux:select wire:model.live="trialStatus" label="Trial Status">
-                        <option value="">All Trials</option>
+                    <flux:select wire:model.live="statusFilter" label="Status">
+                        <option value="">All Statuses</option>
+                        <option value="trial">Trial</option>
                         <option value="active">Active</option>
-                        <option value="expired">Expired</option>
-                        <option value="converted">Converted</option>
-                        <option value="none">No Trial</option>
+                        <option value="trial_expired">Trial Expired</option>
+                        <option value="churned">Churned</option>
+                        <option value="none">No Status</option>
                     </flux:select>
                 </div>
                 <div>
@@ -53,7 +54,7 @@
                 </flux:table.column>
                 <flux:table.column>Users</flux:table.column>
                 <flux:table.column>Plan</flux:table.column>
-                <flux:table.column>Trial Status</flux:table.column>
+                <flux:table.column>Status</flux:table.column>
                 <flux:table.column>Trial Ends</flux:table.column>
                 <flux:table.column>
                     <button wire:click="sortBy('created_at')" class="flex items-center gap-1">
@@ -86,16 +87,10 @@
                             @endif
                         </flux:table.cell>
                         <flux:table.cell>
-                            @if($account->trial_status)
-                                @if($account->isOnTrial())
-                                    <flux:badge color="yellow">Active</flux:badge>
-                                @elseif($account->hasExpiredTrial())
-                                    <flux:badge color="red">Expired</flux:badge>
-                                @elseif($account->trial_status === 'converted')
-                                    <flux:badge color="green">Converted</flux:badge>
-                                @endif
+                            @if($account->status)
+                                <flux:badge color="{{ $account->status_color }}">{{ $account->status_label }}</flux:badge>
                             @else
-                                <span class="text-zinc-500 dark:text-zinc-400">No trial</span>
+                                <span class="text-zinc-500 dark:text-zinc-400">No status</span>
                             @endif
                         </flux:table.cell>
                         <flux:table.cell>

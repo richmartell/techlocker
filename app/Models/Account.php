@@ -31,9 +31,10 @@ class Account extends Model
         'hourly_labour_rate',
         'labour_loading_percentage',
         'plan_id',
+        'reseller_id',
         'trial_started_at',
         'trial_ends_at',
-        'trial_status',
+        'status',
         'subscribed_at',
     ];
 
@@ -116,11 +117,19 @@ class Account extends Model
     }
 
     /**
+     * Get the reseller that the account belongs to.
+     */
+    public function reseller(): BelongsTo
+    {
+        return $this->belongsTo(Reseller::class);
+    }
+
+    /**
      * Check if the account is on an active trial.
      */
     public function isOnTrial(): bool
     {
-        return $this->trial_status === 'active' 
+        return $this->status === 'trial' 
             && $this->trial_ends_at 
             && $this->trial_ends_at->isFuture();
     }
@@ -130,8 +139,8 @@ class Account extends Model
      */
     public function hasExpiredTrial(): bool
     {
-        return $this->trial_status === 'expired' 
-            || ($this->trial_ends_at && $this->trial_ends_at->isPast() && $this->trial_status === 'active');
+        return $this->status === 'trial_expired' 
+            || ($this->trial_ends_at && $this->trial_ends_at->isPast() && $this->status === 'trial');
     }
 
     /**
@@ -143,6 +152,34 @@ class Account extends Model
             return null;
         }
 
-        return now()->diffInDays($this->trial_ends_at, false);
+        return (int) now()->diffInDays($this->trial_ends_at, false);
+    }
+
+    /**
+     * Get the status badge color.
+     */
+    public function getStatusColorAttribute(): string
+    {
+        return match($this->status) {
+            'trial' => 'lime',
+            'active' => 'green',
+            'trial_expired' => 'orange',
+            'churned' => 'red',
+            default => 'zinc',
+        };
+    }
+
+    /**
+     * Get the formatted status label.
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        return match($this->status) {
+            'trial' => 'Trial',
+            'active' => 'Active',
+            'trial_expired' => 'Trial Expired',
+            'churned' => 'Churned',
+            default => ucfirst($this->status ?? 'Unknown'),
+        };
     }
 } 

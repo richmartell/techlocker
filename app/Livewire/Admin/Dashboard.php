@@ -14,18 +14,19 @@ class Dashboard extends Component
         return [
             'total_accounts' => Account::count(),
             'total_users' => User::count(),
-            'active_trials' => Account::where('trial_status', 'active')
+            'active_trials' => Account::where('status', 'trial')
                 ->where('trial_ends_at', '>', now())
                 ->count(),
             'expired_trials' => Account::where(function ($query) {
-                $query->where('trial_status', 'expired')
+                $query->where('status', 'trial_expired')
                     ->orWhere(function ($q) {
-                        $q->where('trial_status', 'active')
+                        $q->where('status', 'trial')
                             ->where('trial_ends_at', '<=', now());
                     });
             })->count(),
-            'converted_trials' => Account::where('trial_status', 'converted')->count(),
+            'converted_trials' => Account::where('status', 'active')->count(),
             'accounts_with_plans' => Account::whereNotNull('plan_id')->count(),
+            'churned_accounts' => Account::where('status', 'churned')->count(),
         ];
     }
 

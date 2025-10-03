@@ -103,6 +103,23 @@
                 </div>
             </div>
         </flux:card>
+
+        <!-- Churned Accounts -->
+        <flux:card>
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Churned Accounts</p>
+                        <p class="text-3xl font-bold text-zinc-900 dark:text-white mt-2">{{ number_format($this->stats['churned_accounts']) }}</p>
+                    </div>
+                    <div class="p-3 bg-gray-100 dark:bg-gray-900 rounded-lg">
+                        <svg class="w-8 h-8 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </flux:card>
     </div>
 
     <div class="flex gap-4">
