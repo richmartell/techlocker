@@ -44,5 +44,9 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
     
     // Invoices
     Route::get('/invoices', \App\Livewire\Admin\Invoices\Index::class)->name('invoices.index');
+    
+    // Resellers
+    Route::get('/resellers', \App\Livewire\Admin\Resellers\Index::class)->name('resellers.index');
+    Route::get('/resellers/create', \App\Livewire\Admin\Resellers\Create::class)->name('resellers.create');
+    Route::get('/resellers/{reseller}', \App\Livewire\Admin\Resellers\Show::class)->name('resellers.show');
 });
-

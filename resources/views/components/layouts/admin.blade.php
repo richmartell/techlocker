@@ -15,6 +15,7 @@
             <flux:navbar class="-mb-px max-lg:hidden">
                 <flux:navbar.item icon="home" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>Dashboard</flux:navbar.item>
                 <flux:navbar.item icon="building-office" :href="route('admin.accounts.index')" :current="request()->routeIs('admin.accounts.*')" wire:navigate>Accounts</flux:navbar.item>
+                <flux:navbar.item icon="user-group" :href="route('admin.resellers.index')" :current="request()->routeIs('admin.resellers.*')" wire:navigate>Resellers</flux:navbar.item>
                 <flux:navbar.item icon="rectangle-stack" :href="route('admin.plans.index')" :current="request()->routeIs('admin.plans.*')" wire:navigate>Plans</flux:navbar.item>
                 <flux:navbar.item icon="banknotes" :href="route('admin.invoices.index')" :current="request()->routeIs('admin.invoices.*')" wire:navigate>Billing</flux:navbar.item>
             </flux:navbar>
@@ -60,6 +61,7 @@
             <flux:navlist variant="outline">
                 <flux:navlist.item icon="home" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>Dashboard</flux:navlist.item>
                 <flux:navlist.item icon="building-office" :href="route('admin.accounts.index')" :current="request()->routeIs('admin.accounts.*')" wire:navigate>Accounts</flux:navlist.item>
+                <flux:navlist.item icon="user-group" :href="route('admin.resellers.index')" :current="request()->routeIs('admin.resellers.*')" wire:navigate>Resellers</flux:navlist.item>
                 <flux:navlist.item icon="rectangle-stack" :href="route('admin.plans.index')" :current="request()->routeIs('admin.plans.*')" wire:navigate>Plans</flux:navlist.item>
                 <flux:navlist.item icon="banknotes" :href="route('admin.invoices.index')" :current="request()->routeIs('admin.invoices.*')" wire:navigate>Billing</flux:navlist.item>
             </flux:navlist>
