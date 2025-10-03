@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Account extends Model
 {
@@ -28,7 +29,12 @@ class Account extends Model
         'web_address',
         'is_active',
         'hourly_labour_rate',
-        'labour_loading_percentage'
+        'labour_loading_percentage',
+        'plan_id',
+        'trial_started_at',
+        'trial_ends_at',
+        'trial_status',
+        'subscribed_at',
     ];
 
     /**
@@ -40,6 +46,9 @@ class Account extends Model
         'is_active' => 'boolean',
         'hourly_labour_rate' => 'decimal:2',
         'labour_loading_percentage' => 'decimal:4',
+        'trial_started_at' => 'datetime',
+        'trial_ends_at' => 'datetime',
+        'subscribed_at' => 'datetime',
     ];
 
     /**
@@ -67,6 +76,14 @@ class Account extends Model
     }
 
     /**
+     * Get the invoices for the account.
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
      * Get the formatted hourly labour rate.
      */
     public function getFormattedHourlyRateAttribute(): string
@@ -88,5 +105,44 @@ class Account extends Model
     public function applyLabourLoading(float $estimatedHours): float
     {
         return $estimatedHours * (1 + $this->labour_loading_percentage);
+    }
+
+    /**
+     * Get the plan that the account belongs to.
+     */
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class);
+    }
+
+    /**
+     * Check if the account is on an active trial.
+     */
+    public function isOnTrial(): bool
+    {
+        return $this->trial_status === 'active' 
+            && $this->trial_ends_at 
+            && $this->trial_ends_at->isFuture();
+    }
+
+    /**
+     * Check if the account's trial has expired.
+     */
+    public function hasExpiredTrial(): bool
+    {
+        return $this->trial_status === 'expired' 
+            || ($this->trial_ends_at && $this->trial_ends_at->isPast() && $this->trial_status === 'active');
+    }
+
+    /**
+     * Get the number of days remaining in the trial.
+     */
+    public function trialDaysRemaining(): ?int
+    {
+        if (!$this->trial_ends_at || !$this->isOnTrial()) {
+            return null;
+        }
+
+        return now()->diffInDays($this->trial_ends_at, false);
     }
 } 
