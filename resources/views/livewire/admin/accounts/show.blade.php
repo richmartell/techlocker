@@ -156,6 +156,7 @@
                         <flux:table.column>Role</flux:table.column>
                         <flux:table.column>Joined</flux:table.column>
                         <flux:table.column>Status</flux:table.column>
+                        <flux:table.column>Actions</flux:table.column>
                     </flux:table.columns>
 
                     <flux:table.rows>
@@ -175,6 +176,16 @@
                                     @else
                                         <flux:badge color="red">Inactive</flux:badge>
                                     @endif
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:button 
+                                        size="sm" 
+                                        variant="ghost"
+                                        href="{{ route('dvla-lookup') }}"
+                                        target="_blank"
+                                    >
+                                        DVLA Lookup
+                                    </flux:button>
                                 </flux:table.cell>
                             </flux:table.row>
                         @endforeach

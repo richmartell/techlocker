@@ -53,4 +53,8 @@ return [
         'vrm_token' => env('HAYNESPRO_VRM_TOKEN'),
     ],
 
+    'mot' => [
+        'api_key' => env('MOT_API_KEY'),
+    ],
+
 ];

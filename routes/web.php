@@ -45,6 +45,8 @@ Route::post('/vehicle-lookup/search', [VehicleLookupController::class, 'search']
 
 Route::post('/vehicle-lookup/save', [VehicleLookupController::class, 'save'])->middleware(['auth', 'verified'])->name('vehicle-lookup.save');
 
+Route::get('/dvla-lookup', \App\Livewire\Vehicles\DvlaLookup::class)->middleware(['auth', 'verified'])->name('dvla-lookup');
+
 Route::get('/vehicle/{registration}', [VehicleController::class, 'show'])->middleware(['auth', 'verified'])->name('vehicle-details');
 
 Route::get('/vehicle-data/makes', [VehicleDataController::class, 'makes'])->middleware(['auth', 'verified'])->name('vehicle-data.makes');
