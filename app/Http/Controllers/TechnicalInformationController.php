@@ -878,6 +878,11 @@ class TechnicalInformationController extends Controller
      */
     private function getCarTypeId(Vehicle $vehicle): ?int
     {
+        // If vehicle already has a car_type_id, use it
+        if ($vehicle->car_type_id) {
+            return $vehicle->car_type_id;
+        }
+        
         // Try VIN-based identification first
         if ($vehicle->combined_vin && $vehicle->make && $vehicle->model && $vehicle->year_of_manufacture) {
             try {
