@@ -2422,10 +2422,153 @@ class HaynesPro
     }
 
     /**
+     * Intelligently rank vehicle matches based on how well they match known specs.
+     * 
+     * @param array $candidates Array of car type candidates from VIN decode
+     * @param array $knownSpecs Known vehicle specs from VRM/DVLA (capacity, fuelType)
+     * @return array|null Best matching car type or null if no candidates
+     */
+    private function selectBestVehicleMatch(array $candidates, array $knownSpecs): ?array
+    {
+        if (empty($candidates)) {
+            return null;
+        }
+
+        $scoredCandidates = [];
+        
+        // Extract known specs
+        $knownCapacity = isset($knownSpecs['CombinedEngineCapacity']) 
+            ? (int) $knownSpecs['CombinedEngineCapacity'] 
+            : null;
+        $knownFuelType = $knownSpecs['CombinedFuelType'] ?? null;
+        
+        Log::info('HaynesPro: Ranking vehicle matches', [
+            'candidate_count' => count($candidates),
+            'known_capacity' => $knownCapacity,
+            'known_fuel_type' => $knownFuelType
+        ]);
+
+        foreach ($candidates as $candidate) {
+            $score = 0;
+            $reasons = [];
+            
+            // Score based on engine capacity match
+            if ($knownCapacity && isset($candidate['capacity'])) {
+                $candidateCapacity = (int) $candidate['capacity'];
+                $capacityDiff = abs($knownCapacity - $candidateCapacity);
+                
+                if ($capacityDiff === 0) {
+                    $score += 100; // Perfect match
+                    $reasons[] = 'exact_capacity_match';
+                } elseif ($capacityDiff <= 50) {
+                    $score += 80; // Very close (within 50cc)
+                    $reasons[] = 'close_capacity_match';
+                } elseif ($capacityDiff <= 200) {
+                    $score += 40; // Somewhat close (within 200cc)
+                    $reasons[] = 'near_capacity_match';
+                }
+            }
+            
+            // Score based on fuel type match
+            if ($knownFuelType && isset($candidate['fuelType'])) {
+                $candidateFuelTypes = is_array($candidate['fuelType']) 
+                    ? $candidate['fuelType'] 
+                    : [$candidate['fuelType']];
+                
+                // Handle hybrid fuel types (PETROL/ELECTRIC should match PETROL)
+                $knownFuelParts = explode('/', strtoupper($knownFuelType));
+                $isKnownHybrid = count($knownFuelParts) > 1; // e.g., PETROL/ELECTRIC
+                
+                foreach ($candidateFuelTypes as $candidateFuel) {
+                    $candidateFuel = strtoupper($candidateFuel);
+                    
+                    // Check for exact match or partial match in hybrid vehicles
+                    if (in_array($candidateFuel, $knownFuelParts)) {
+                        $score += 50; // Fuel type match
+                        $reasons[] = 'fuel_type_match:' . $candidateFuel;
+                        break;
+                    }
+                }
+                
+                // Bonus for hybrid identification
+                if ($isKnownHybrid) {
+                    $candidateName = strtoupper($candidate['name'] ?? '');
+                    $candidateFullName = strtoupper($candidate['fullName'] ?? '');
+                    
+                    // Check if this is a hybrid/PHEV/MHEV variant
+                    $hybridIndicators = ['PHEV', 'MHEV', 'HYBRID', 'ELECTRIC', 'E-HYBRID'];
+                    foreach ($hybridIndicators as $indicator) {
+                        if (strpos($candidateName, $indicator) !== false || 
+                            strpos($candidateFullName, $indicator) !== false) {
+                            $score += 30; // Bonus for hybrid match
+                            $reasons[] = 'hybrid_match:' . $indicator;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Bonus points for having technical data available
+            if (!empty($candidate['subjects']) || !empty($candidate['subjectsByGroup'])) {
+                $score += 10;
+                $reasons[] = 'has_technical_data';
+            }
+            
+            $scoredCandidates[] = [
+                'candidate' => $candidate,
+                'score' => $score,
+                'reasons' => $reasons,
+                'id' => $candidate['id'] ?? null,
+                'name' => $candidate['name'] ?? 'Unknown',
+                'capacity' => $candidate['capacity'] ?? null,
+                'fuel_type' => is_array($candidate['fuelType'] ?? null) 
+                    ? implode(', ', $candidate['fuelType']) 
+                    : ($candidate['fuelType'] ?? 'Unknown')
+            ];
+        }
+        
+        // Sort by score (highest first)
+        usort($scoredCandidates, function($a, $b) {
+            return $b['score'] <=> $a['score'];
+        });
+        
+        // Log the ranking
+        Log::info('HaynesPro: Vehicle match ranking complete', [
+            'top_3_matches' => array_slice(array_map(function($sc) {
+                return [
+                    'id' => $sc['id'],
+                    'name' => $sc['name'],
+                    'capacity' => $sc['capacity'] . 'cc',
+                    'fuel' => $sc['fuel_type'],
+                    'score' => $sc['score'],
+                    'reasons' => $sc['reasons']
+                ];
+            }, $scoredCandidates), 0, 3)
+        ]);
+        
+        // Return the best match
+        $bestMatch = $scoredCandidates[0] ?? null;
+        
+        if ($bestMatch) {
+            Log::info('HaynesPro: Selected best vehicle match', [
+                'id' => $bestMatch['id'],
+                'name' => $bestMatch['name'],
+                'score' => $bestMatch['score'],
+                'reasons' => $bestMatch['reasons']
+            ]);
+            
+            return $bestMatch['candidate'];
+        }
+        
+        return null;
+    }
+
+    /**
      * Complete vehicle identification process:
      * 1. Get vehicle details from VRM API
      * 2. Use VIN to decode and get car types
-     * 3. Extract car type ID and available subjects
+     * 3. Intelligently select the best match based on vehicle specs
+     * 4. Extract car type ID and available subjects
      * 
      * @param string $registration The vehicle registration
      * @return array Array containing vehicle data, car_type_id, and available_subjects
@@ -2489,28 +2632,29 @@ class HaynesPro
                 ];
             }
 
-            // Step 3: Extract car type ID and available subjects
+            // Step 3: Intelligently select the best matching car type
+            $bestMatch = $this->selectBestVehicleMatch($vinDecodeData, $vehicleInfo);
+            
             $carTypeId = null;
             $availableSubjects = [];
 
-            // Look for the first car type with subjects
-            foreach ($vinDecodeData as $carType) {
-                if (isset($carType['id']) && !empty($carType['id'])) {
-                    $carTypeId = (int) $carType['id'];
-                    
-                    // Extract available subjects
-                    if (isset($carType['subjectsByGroup']['mapItems']) && is_array($carType['subjectsByGroup']['mapItems'])) {
-                        foreach ($carType['subjectsByGroup']['mapItems'] as $group) {
-                            if (isset($group['value']) && !empty($group['value'])) {
-                                $subjects = explode(',', $group['value']);
-                                $availableSubjects = array_merge($availableSubjects, $subjects);
-                            }
+            if ($bestMatch && isset($bestMatch['id'])) {
+                $carTypeId = (int) $bestMatch['id'];
+                
+                // Extract available subjects
+                if (isset($bestMatch['subjectsByGroup']['mapItems']) && is_array($bestMatch['subjectsByGroup']['mapItems'])) {
+                    foreach ($bestMatch['subjectsByGroup']['mapItems'] as $group) {
+                        if (isset($group['value']) && !empty($group['value'])) {
+                            $subjects = explode(',', $group['value']);
+                            $availableSubjects = array_merge($availableSubjects, $subjects);
                         }
                     }
-                    
-                    // Use the first valid car type we find
-                    break;
                 }
+            } else {
+                Log::warning('HaynesPro: No suitable vehicle match found', [
+                    'registration' => $registration,
+                    'candidates_count' => count($vinDecodeData)
+                ]);
             }
 
             // Remove duplicates and clean up subjects
