@@ -38,11 +38,11 @@
             </div>
         @endif
 
-        @if(!empty($maintenanceStories))
+        @if(!empty($procedures))
             <!-- Procedures List -->
             <flux:card>
                 <div class="divide-y divide-zinc-200 dark:divide-zinc-800">
-                    @foreach($maintenanceStories as $story)
+                    @foreach($procedures as $story)
                         @php
                             $storyName = $story['name'] ?? 'Unknown Procedure';
                             $storyId = $story['storyId'] ?? null;

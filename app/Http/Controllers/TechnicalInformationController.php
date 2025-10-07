@@ -733,12 +733,22 @@ class TechnicalInformationController extends Controller
                 return back()->with('error', 'Vehicle identification not available for maintenance procedures');
             }
 
-            // Get maintenance stories for this vehicle
-            $maintenanceStories = $this->haynespro->getMaintenanceStoriesWithCache($carTypeId);
+            // Get all repair manual procedures (stories) for this vehicle
+            // Try to get from cache first
+            $cache = \App\Models\HaynesProVehicle::getOrCreate($carTypeId);
+            
+            if ($cache->isFresh() && !is_null($cache->story_overview)) {
+                $procedures = $cache->story_overview;
+                Log::info('Using cached story overview', ['carTypeId' => $carTypeId]);
+            } else {
+                $procedures = $this->haynespro->getStoryOverview($carTypeId);
+                $cache->updateData('story_overview', $procedures);
+                Log::info('Fetched and cached story overview', ['carTypeId' => $carTypeId]);
+            }
 
             return view('maintenance.procedures', [
                 'vehicle' => $vehicle,
-                'maintenanceStories' => $maintenanceStories,
+                'procedures' => $procedures,
                 'error' => null
             ]);
 
@@ -750,7 +760,7 @@ class TechnicalInformationController extends Controller
 
             return view('maintenance.procedures', [
                 'vehicle' => Vehicle::where('registration', $registration)->firstOrFail(),
-                'maintenanceStories' => [],
+                'procedures' => [],
                 'error' => $e->getMessage()
             ]);
         }
@@ -775,13 +785,26 @@ class TechnicalInformationController extends Controller
             // Get the story information using storyId
             $storyData = $this->haynespro->getStoryInfoV6($carTypeId, $storyId, false);
             
-            // Get the story metadata from cached maintenance stories
+            // Extract story name from the API response
+            $storyName = $storyData['name'] ?? null;
+            
+            // Get the story metadata from cached story overview
             $storyMetadata = null;
             try {
-                $maintenanceStories = $this->haynespro->getMaintenanceStoriesWithCache($carTypeId);
-                foreach ($maintenanceStories as $story) {
+                $cache = \App\Models\HaynesProVehicle::getOrCreate($carTypeId);
+                if ($cache->isFresh() && !is_null($cache->story_overview)) {
+                    $storyOverview = $cache->story_overview;
+                } else {
+                    $storyOverview = $this->haynespro->getStoryOverview($carTypeId);
+                }
+                
+                foreach ($storyOverview as $story) {
                     if (($story['storyId'] ?? 0) == $storyId) {
                         $storyMetadata = $story;
+                        // Use story name from overview if not in storyData
+                        if (!$storyName && isset($story['name'])) {
+                            $storyName = $story['name'];
+                        }
                         break;
                     }
                 }
@@ -797,6 +820,7 @@ class TechnicalInformationController extends Controller
                 'vehicle' => $vehicle,
                 'storyData' => $storyData,
                 'storyMetadata' => $storyMetadata,
+                'storyName' => $storyName,
                 'storyId' => $storyId,
                 'error' => null
             ]);

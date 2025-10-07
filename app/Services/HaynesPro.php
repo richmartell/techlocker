@@ -755,11 +755,11 @@ class HaynesPro
 
             $params = [
                 'descriptionLanguage' => 'en',
-                'carTypeId' => $carTypeId
+                'carType' => $carTypeId
             ];
 
             if ($systemGroup) {
-                $params['systemGroup'] = $systemGroup;
+                $params['carTypeGroup'] = $systemGroup;
                 $response = $this->request('getStoryOverviewByGroupV2', $params, 'get');
             } else {
                 $response = $this->request('getStoryOverview', $params, 'get');
