@@ -10,6 +10,7 @@ use App\Http\Controllers\VehicleDataController;
 use App\Http\Controllers\TechnicalInformationController;
 use App\Http\Controllers\HaynesInspectorController;
 use App\Http\Controllers\AdjustmentsController;
+use App\Http\Controllers\BillingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -84,6 +85,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // API Settings Routes
     Route::get('settings/api', [ApiSettingsController::class, 'show'])->name('settings.api');
     Route::post('settings/api', [ApiSettingsController::class, 'save'])->name('settings.api.save');
+
+    // Billing Routes
+    Route::get('billing', [BillingController::class, 'index'])->name('billing.index');
+    Route::post('billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
+    Route::post('billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
+    Route::get('billing/success', [BillingController::class, 'success'])->name('billing.success');
     
     // Technical Information Routes
     Route::prefix('vehicle/{registration}/technical')->group(function () {

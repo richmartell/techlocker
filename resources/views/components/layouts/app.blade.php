@@ -43,6 +43,7 @@
                         </div>
                     </flux:menu.radio.group>
                     <flux:menu.separator />
+                    <flux:menu.item :href="route('billing.index')" icon="credit-card" wire:navigate>Billing</flux:menu.item>
                     <flux:menu.item :href="route('settings.profile')" icon="cog-6-tooth" wire:navigate>Settings</flux:menu.item>
                     <flux:menu.separator />
                     <form method="POST" action="{{ route('logout') }}" class="w-full">

@@ -47,6 +47,7 @@ class Vehicle extends Model
         'car_type_id',
         'available_subjects',
         'car_type_identified_at',
+        'notes',
     ];
 
     protected $dates = [

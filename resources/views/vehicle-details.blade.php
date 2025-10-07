@@ -34,6 +34,7 @@
                     </div>
                 </div>
 
+                <!-- Row 1: Basic Information & Notes -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Basic Vehicle Information -->
                     <div class="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
@@ -78,6 +79,12 @@
                         </dl>
                     </div>
 
+                    <!-- Mechanic Notes -->
+                    @livewire('vehicles.notes', ['vehicle' => $vehicle])
+                </div>
+
+                <!-- Row 2: Technical Specifications & DVLA Information -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Technical Specifications -->
                     <div class="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
                         <h3 class="text-lg font-semibold mb-4 flex items-center">
@@ -173,7 +180,10 @@
                             @endif
                         </dl>
                     </div>
+                </div>
 
+                <!-- Row 3: Data Sources & Sync Information -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Data Sources & Sync Information -->
                     <div class="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
                         <h3 class="text-lg font-semibold mb-4 flex items-center">
