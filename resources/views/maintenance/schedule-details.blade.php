@@ -215,39 +215,61 @@
             </flux:card>
         @endif
 
-        @if(!empty($maintenanceParts))
-            <!-- Maintenance Parts -->
+        @if(isset($rawApiData))
+            <!-- API Output -->
             <div class="mt-8">
-                <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Required Parts</h2>
+                <div class="flex items-center gap-3 mb-4">
+                    <flux:icon.code-bracket class="w-6 h-6 text-zinc-500 dark:text-zinc-400" />
+                    <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">API Output</h2>
+                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full">
+                        Debug Data
+                    </span>
+                </div>
                 
                 <flux:card>
                     <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            @foreach($maintenanceParts as $part)
-                                <div class="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
-                                    <h4 class="font-medium text-zinc-900 dark:text-zinc-100 mb-2">
-                                        {{ $part['name'] ?? $part['description'] ?? 'Part' }}
-                                    </h4>
-                                    
-                                    @if(isset($part['partNumber']))
-                                        <div class="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
-                                            Part #: {{ $part['partNumber'] }}
-                                        </div>
-                                    @endif
-                                    
-                                    @if(isset($part['quantity']))
-                                        <div class="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
-                                            Quantity: {{ $part['quantity'] }}
-                                        </div>
-                                    @endif
-                                    
-                                    @if(isset($part['specification']))
-                                        <div class="text-sm text-zinc-600 dark:text-zinc-400">
-                                            Spec: {{ $part['specification'] }}
-                                        </div>
-                                    @endif
+                        <div class="mb-4">
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                                Raw JSON data returned from the HaynesPro API for this maintenance schedule:
+                            </p>
+                            
+                            <!-- Copy Button -->
+                            <div class="flex justify-end mb-2">
+                                <flux:button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onclick="copyApiData()"
+                                    id="copyButton"
+                                >
+                                    <flux:icon.clipboard class="w-4 h-4 mr-2" />
+                                    Copy JSON
+                                </flux:button>
+                            </div>
+                            
+                            <!-- JSON Output -->
+                            <div class="bg-zinc-900 dark:bg-zinc-950 rounded-lg overflow-hidden">
+                                <div class="bg-zinc-800 dark:bg-zinc-900 px-4 py-2 border-b border-zinc-700">
+                                    <span class="text-sm font-medium text-zinc-300">JSON Response</span>
                                 </div>
-                            @endforeach
+                                <pre id="apiData" class="p-4 text-sm text-zinc-100 overflow-x-auto whitespace-pre-wrap max-h-96 overflow-y-auto"><code>{{ json_encode($rawApiData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</code></pre>
+                            </div>
+                        </div>
+                        
+                        <!-- Data Summary -->
+                        <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <div class="flex items-center gap-2 mb-2">
+                                <flux:icon.information-circle class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                <span class="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                    API Data Summary
+                                </span>
+                            </div>
+                            <div class="text-sm text-blue-700 dark:text-blue-200 space-y-1">
+                                <div>• Maintenance Tasks: {{ count($rawApiData['maintenanceTasks'] ?? []) }} items</div>
+                                <div>• Maintenance Parts: {{ count($rawApiData['maintenanceParts'] ?? []) }} items</div>
+                                <div>• System ID: {{ $systemId }}</div>
+                                <div>• Period ID: {{ $periodId }}</div>
+                                <div>• Car Type ID: {{ $carTypeId }}</div>
+                            </div>
                         </div>
                     </div>
                 </flux:card>
@@ -284,10 +306,10 @@
 
     </div>
 
-    @if(!empty($maintenanceTasks))
-        @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            @if(!empty($maintenanceTasks))
                 // Load saved checklist state from localStorage
                 const checklistId = 'maintenance-checklist-{{ $vehicle->registration }}-{{ $systemId }}-{{ $periodId }}';
                 const savedState = localStorage.getItem(checklistId);
@@ -331,8 +353,30 @@
                     });
                     localStorage.setItem(checklistId, JSON.stringify(checkedItems));
                 }
-            });
-        </script>
-        @endpush
-    @endif
+            @endif
+        });
+        
+        // Copy API data function
+        function copyApiData() {
+            const apiData = document.getElementById('apiData');
+            const copyButton = document.getElementById('copyButton');
+            
+            if (apiData) {
+                const text = apiData.textContent;
+                navigator.clipboard.writeText(text).then(function() {
+                    // Update button text temporarily
+                    const originalText = copyButton.innerHTML;
+                    copyButton.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Copied!';
+                    
+                    setTimeout(function() {
+                        copyButton.innerHTML = originalText;
+                    }, 2000);
+                }).catch(function(err) {
+                    console.error('Failed to copy: ', err);
+                    alert('Failed to copy to clipboard');
+                });
+            }
+        }
+    </script>
+    @endpush
 </x-layouts.app> 

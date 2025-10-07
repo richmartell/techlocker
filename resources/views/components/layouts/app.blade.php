@@ -102,6 +102,7 @@
                         <flux:navlist.item :href="route('vehicle-diagnostics', $vehicle->registration)" :current="request()->routeIs('vehicle-diagnostics')" wire:navigate>Engine</flux:navlist.item>
                         <flux:navlist.item href="#" wire:navigate>Transmission</flux:navlist.item>
                     </flux:navlist.group>
+                    <flux:navlist.item :href="route('drawings.index', $vehicle->registration)" :current="request()->routeIs('drawings.*')" wire:navigate icon="document-chart-bar">Drawings</flux:navlist.item>
                 </flux:navlist>
             @endif
         </flux:sidebar>
@@ -152,6 +153,7 @@
                                 <flux:navlist.item :href="route('vehicle-diagnostics', $vehicle->registration)" :current="request()->routeIs('vehicle-diagnostics')" wire:navigate>Engine</flux:navlist.item>
                                 <flux:navlist.item href="#" wire:navigate>Transmission</flux:navlist.item>
                             </flux:navlist.group>
+                            <flux:navlist.item :href="route('drawings.index', $vehicle->registration)" :current="request()->routeIs('drawings.*')" wire:navigate icon="document-chart-bar">Drawings</flux:navlist.item>
                         </flux:navlist>
                     </div>
                     <flux:separator class="md:hidden" />

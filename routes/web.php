@@ -143,6 +143,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/service-indicator-reset', [TechnicalInformationController::class, 'serviceIndicatorReset'])->name('maintenance.service-indicator-reset');
     });
 
+    // Drawings Routes
+    Route::prefix('vehicle/{registration}/drawings')->group(function () {
+        Route::get('/', [TechnicalInformationController::class, 'drawingsIndex'])->name('drawings.index');
+    });
+
     // Jobs routes  
     Route::get('/jobs', \App\Livewire\Jobs\Index::class)->name('workshop.jobs.index');
     Route::get('/jobs/create', \App\Livewire\Jobs\Upsert::class)->name('workshop.jobs.create');
