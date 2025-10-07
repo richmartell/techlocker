@@ -139,33 +139,6 @@
                                                         </p>
                                                     @endif
                                                 </div>
-                                                
-                                                <!-- Service Time -->
-                                                @if(isset($task['serviceTime']) || isset($task['time']) || isset($task['duration']))
-                                                    <div class="flex-shrink-0 ml-4">
-                                                        <div class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
-                                                            <flux:icon.clock class="w-4 h-4" />
-                                                            <span>
-                                                                @php
-                                                                    $serviceTime = $task['serviceTime'] ?? $task['time'] ?? $task['duration'] ?? 'N/A';
-                                                                    if (is_array($serviceTime)) {
-                                                                        $serviceTime = implode(', ', array_filter($serviceTime)) ?: 'N/A';
-                                                                    }
-                                                                    $timeUnit = $task['timeUnit'] ?? 'min';
-                                                                    if (is_array($timeUnit)) {
-                                                                        $timeUnit = implode(', ', array_filter($timeUnit)) ?: 'min';
-                                                                    }
-                                                                @endphp
-                                                                {{ $serviceTime }}
-                                                                @if(isset($task['timeUnit']))
-                                                                    {{ $timeUnit }}
-                                                                @else
-                                                                    min
-                                                                @endif
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                @endif
                                             </div>
                                         </label>
                                     </div>

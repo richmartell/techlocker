@@ -76,33 +76,6 @@
                 @endforeach
             </div>
 
-            <!-- Summary -->
-            <div class="mt-8">
-                <flux:card>
-                    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                        <div class="flex items-center gap-3 mb-2">
-                            <flux:icon.information-circle class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                            <span class="text-sm font-medium text-blue-900 dark:text-blue-100">
-                                Technical Drawings Summary
-                            </span>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-blue-700 dark:text-blue-200">
-                            <div>
-                                <div class="font-medium">Total Drawings</div>
-                                <div class="text-lg font-bold">{{ $totalDrawings }}</div>
-                            </div>
-                            <div>
-                                <div class="font-medium">System Categories</div>
-                                <div class="text-lg font-bold">{{ count($groupedDrawings) }}</div>
-                            </div>
-                            <div>
-                                <div class="font-medium">Vehicle</div>
-                                <div class="text-lg font-bold">{{ $vehicle->registration }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </flux:card>
-            </div>
         @else
             <!-- No Drawings Available -->
             <flux:card>
