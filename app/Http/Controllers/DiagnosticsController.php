@@ -11,6 +11,28 @@ use App\Models\DiagnosticsAiLog;
 class DiagnosticsController extends Controller
 {
     /**
+     * Get vehicle image for a given vehicle
+     */
+    private function getVehicleImage($registration, $carTypeId)
+    {
+        try {
+            if (!$carTypeId) {
+                return null;
+            }
+            
+            $haynesPro = app(\App\Services\HaynesPro::class);
+            $vehicleDetails = $haynesPro->getVehicleDetails($carTypeId);
+            return $vehicleDetails['image'] ?? null;
+        } catch (\Exception $e) {
+            Log::warning('Failed to fetch vehicle image', [
+                'registration' => $registration,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
      * Show the diagnostics page for a specific vehicle.
      */
     public function show(string $registration): View
@@ -27,7 +49,10 @@ class DiagnosticsController extends Controller
             'engine' => $vehicle->engine_capacity ? $vehicle->engine_capacity . 'cc' : 'Unknown',
         ];
 
-        return view('diagnostics-ai', array_merge($vehicleData, ['vehicle' => $vehicle]));
+        // Get vehicle image
+        $vehicleImage = $this->getVehicleImage($registration, $vehicle->car_type_id);
+
+        return view('diagnostics-ai', array_merge($vehicleData, ['vehicle' => $vehicle, 'vehicleImage' => $vehicleImage]));
     }
 
     /**

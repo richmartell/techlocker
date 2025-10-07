@@ -3,8 +3,8 @@
         <div class="p-6 h-full flex-1 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
             <div class="flex flex-col gap-6">
                 <!-- Header -->
-                <div class="flex justify-between items-center">
-                    <div>
+                <div class="flex justify-between items-start gap-6">
+                    <div class="flex-1">
                         <h1 class="text-3xl font-bold">{{ $vehicle->registration }}</h1>
                         <p class="text-lg text-neutral-600 dark:text-neutral-400">
                             {{ $vehicle->make?->name ?? 'Unknown Make' }} {{ $vehicle->model?->name ?? 'Unknown Model' }}
@@ -13,6 +13,7 @@
                             @endif
                         </p>
                     </div>
+                    
                     <div class="flex gap-2">
                         <a href="{{ route('vehicle-lookup') }}">
                             <flux:button variant="ghost" size="sm">

@@ -2,7 +2,7 @@
     $title = 'Maintenance Schedules - ' . ($vehicle->make?->name ?? 'Unknown') . ' ' . ($vehicle->model?->name ?? 'Unknown');
 @endphp
 
-<x-layouts.app :title="$title" :vehicle="$vehicle">
+<x-layouts.app :title="$title" :vehicle="$vehicle" :vehicleImage="$vehicleImage ?? null">
     <div class="max-w-4xl mx-auto">
         <!-- Page Header -->
         <div class="mb-8">

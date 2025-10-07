@@ -18,6 +18,27 @@ class TechnicalInformationController extends Controller
     }
 
     /**
+     * Get vehicle image for a given vehicle
+     */
+    private function getVehicleImage($registration, $carTypeId)
+    {
+        try {
+            if (!$carTypeId) {
+                return null;
+            }
+            
+            $vehicleDetails = $this->haynespro->getVehicleDetails($carTypeId);
+            return $vehicleDetails['image'] ?? null;
+        } catch (\Exception $e) {
+            Log::warning('Failed to fetch vehicle image', [
+                'registration' => $registration,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
      * Show the technical information overview for a vehicle
      */
     public function index(string $registration)
@@ -82,8 +103,12 @@ class TechnicalInformationController extends Controller
                 $subjectsByGroup = $identificationData[0]['subjectsByGroup']['mapItems'] ?? [];
             }
 
+            // Get vehicle image
+            $vehicleImage = $this->getVehicleImage($registration, $carTypeId);
+
             return view('technical-information.index', [
                 'vehicle' => $vehicle,
+                'vehicleImage' => $vehicleImage,
                 'carTypeId' => $carTypeId,
                 'identificationData' => $identificationData,
                 'availableSubjects' => $availableSubjects,
@@ -247,8 +272,12 @@ class TechnicalInformationController extends Controller
             // Get lubricants data for this vehicle
             $lubricants = $this->haynespro->getAllLubricants($carTypeId);
 
+            // Get vehicle image
+            $vehicleImage = $this->getVehicleImage($registration, $carTypeId);
+
             return view('maintenance.lubricants', [
                 'vehicle' => $vehicle,
+                'vehicleImage' => $vehicleImage,
                 'lubricants' => $lubricants,
                 'error' => null
             ]);
@@ -259,8 +288,13 @@ class TechnicalInformationController extends Controller
                 'error' => $e->getMessage()
             ]);
 
+            $vehicle = Vehicle::where('registration', $registration)->firstOrFail();
+            $carTypeId = $this->getCarTypeId($vehicle);
+            $vehicleImage = $this->getVehicleImage($registration, $carTypeId);
+
             return view('maintenance.lubricants', [
-                'vehicle' => Vehicle::where('registration', $registration)->firstOrFail(),
+                'vehicle' => $vehicle,
+                'vehicleImage' => $vehicleImage,
                 'lubricants' => [],
                 'error' => $e->getMessage()
             ]);
@@ -481,8 +515,12 @@ class TechnicalInformationController extends Controller
                 }
             }
 
+            // Get vehicle image
+            $vehicleImage = $this->getVehicleImage($registration, $carTypeId);
+
             return view('maintenance.schedules', [
                 'vehicle' => $vehicle,
+                'vehicleImage' => $vehicleImage,
                 'maintenanceIntervals' => $maintenanceIntervals,
                 'maintenanceSystems' => $maintenanceSystems,
                 'selectedSystemId' => $selectedSystemId,
@@ -692,8 +730,12 @@ class TechnicalInformationController extends Controller
                 Log::warning('Failed to get interval info', ['error' => $e->getMessage()]);
             }
 
+            // Get vehicle image
+            $vehicleImage = $this->getVehicleImage($registration, $carTypeId);
+
             return view('maintenance.schedule-details', [
                 'vehicle' => $vehicle,
+                'vehicleImage' => $vehicleImage,
                 'maintenanceTasks' => $maintenanceTasks,
                 'maintenanceParts' => $maintenanceParts,
                 'carTypeId' => $carTypeId,
@@ -746,8 +788,12 @@ class TechnicalInformationController extends Controller
                 Log::info('Fetched and cached story overview', ['carTypeId' => $carTypeId]);
             }
 
+            // Get vehicle image
+            $vehicleImage = $this->getVehicleImage($registration, $carTypeId);
+
             return view('maintenance.procedures', [
                 'vehicle' => $vehicle,
+                'vehicleImage' => $vehicleImage,
                 'procedures' => $procedures,
                 'error' => null
             ]);
@@ -758,8 +804,13 @@ class TechnicalInformationController extends Controller
                 'error' => $e->getMessage()
             ]);
 
+            $vehicle = Vehicle::where('registration', $registration)->firstOrFail();
+            $carTypeId = $this->getCarTypeId($vehicle);
+            $vehicleImage = $this->getVehicleImage($registration, $carTypeId);
+
             return view('maintenance.procedures', [
-                'vehicle' => Vehicle::where('registration', $registration)->firstOrFail(),
+                'vehicle' => $vehicle,
+                'vehicleImage' => $vehicleImage,
                 'procedures' => [],
                 'error' => $e->getMessage()
             ]);
@@ -816,8 +867,12 @@ class TechnicalInformationController extends Controller
                 ]);
             }
 
+            // Get vehicle image
+            $vehicleImage = $this->getVehicleImage($registration, $carTypeId);
+
             return view('maintenance.story', [
                 'vehicle' => $vehicle,
+                'vehicleImage' => $vehicleImage,
                 'storyData' => $storyData,
                 'storyMetadata' => $storyMetadata,
                 'storyName' => $storyName,
@@ -832,8 +887,13 @@ class TechnicalInformationController extends Controller
                 'error' => $e->getMessage()
             ]);
 
+            $vehicle = Vehicle::where('registration', $registration)->firstOrFail();
+            $carTypeId = $this->getCarTypeId($vehicle);
+            $vehicleImage = $this->getVehicleImage($registration, $carTypeId);
+
             return view('maintenance.story', [
-                'vehicle' => Vehicle::where('registration', $registration)->firstOrFail(),
+                'vehicle' => $vehicle,
+                'vehicleImage' => $vehicleImage,
                 'storyData' => null,
                 'storyMetadata' => null,
                 'storyId' => $storyId,
@@ -1005,8 +1065,12 @@ class TechnicalInformationController extends Controller
                 }
             }
             
+            // Get vehicle image
+            $vehicleImage = $this->getVehicleImage($registration, $carTypeId);
+            
             return view('drawings.index', [
                 'vehicle' => $vehicle,
+                'vehicleImage' => $vehicleImage,
                 'groupedDrawings' => $groupedDrawings,
                 'carTypeId' => $carTypeId,
                 'totalDrawings' => $totalDrawingsCount

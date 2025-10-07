@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
 use App\Services\DVLA;
+use App\Services\HaynesPro;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class VehicleController extends Controller
 {
@@ -15,11 +17,17 @@ class VehicleController extends Controller
     protected DVLA $dvla;
 
     /**
+     * The HaynesPro service instance.
+     */
+    protected HaynesPro $haynesPro;
+
+    /**
      * Create a new controller instance.
      */
-    public function __construct(DVLA $dvla)
+    public function __construct(DVLA $dvla, HaynesPro $haynesPro)
     {
         $this->dvla = $dvla;
+        $this->haynesPro = $haynesPro;
     }
 
     /**
@@ -34,7 +42,36 @@ class VehicleController extends Controller
             ->where('registration', $registration)
             ->firstOrFail();
         
-        return view('vehicle-details', ['vehicle' => $vehicle]);
+        // Get vehicle image
+        $vehicleImage = $this->getVehicleImage($vehicle);
+        
+        return view('vehicle-details', [
+            'vehicle' => $vehicle,
+            'vehicleImage' => $vehicleImage
+        ]);
+    }
+
+    /**
+     * Get vehicle image for a given vehicle
+     */
+    private function getVehicleImage(Vehicle $vehicle)
+    {
+        try {
+            $carTypeId = $vehicle->car_type_id;
+            
+            if (!$carTypeId) {
+                return null;
+            }
+            
+            $vehicleDetails = $this->haynesPro->getVehicleDetails($carTypeId);
+            return $vehicleDetails['image'] ?? null;
+        } catch (\Exception $e) {
+            Log::warning('Failed to fetch vehicle image', [
+                'registration' => $vehicle->registration,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 
     /**
