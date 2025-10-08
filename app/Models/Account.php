@@ -34,6 +34,7 @@ class Account extends Model
         'is_active',
         'hourly_labour_rate',
         'labour_loading_percentage',
+        'vat_registered',
         'plan_id',
         'reseller_id',
         'trial_started_at',

@@ -71,6 +71,24 @@
                     </flux:description>
                 </flux:field>
 
+                {{-- VAT Registration --}}
+                <flux:field>
+                    <flux:label>VAT Registration</flux:label>
+                    <div class="space-y-2">
+                        <flux:checkbox wire:model.live="vat_registered">
+                            VAT Registered
+                        </flux:checkbox>
+                    </div>
+                    <flux:description>
+                        Enable if your business is VAT registered. When enabled, 20% VAT will be added to all quotes and invoices.
+                        @if($vat_registered)
+                            <span class="font-semibold text-green-600 dark:text-green-400">Currently VAT registered (20% will be added)</span>
+                        @else
+                            <span class="font-semibold text-zinc-600 dark:text-zinc-400">Not VAT registered (No VAT will be added)</span>
+                        @endif
+                    </flux:description>
+                </flux:field>
+
                 {{-- Preview Section --}}
                 @if($this->estimatedCost)
                     <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">

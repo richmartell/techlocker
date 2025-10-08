@@ -420,6 +420,98 @@ class HaynesPro
     }
 
     /**
+     * Get repair time types for a vehicle
+     * This is the first step in the repair times workflow
+     * 
+     * @param int $carTypeId The vehicle carTypeId
+     * @return array Array of ExtRepairtimeType objects
+     * @throws Exception If the API request fails
+     */
+    public function getRepairtimeTypesV2(int $carTypeId): array
+    {
+        try {
+            Log::info('HaynesPro: Getting repair time types', [
+                'carTypeId' => $carTypeId
+            ]);
+
+            $params = [
+                'descriptionLanguage' => 'en',
+                'carTypeId' => $carTypeId
+            ];
+
+            $response = $this->request('getRepairtimeTypesV2', $params, 'get');
+
+            Log::info('HaynesPro: Successfully retrieved repair time types', [
+                'carTypeId' => $carTypeId,
+                'types_count' => count($response ?? []),
+                'response' => $response
+            ]);
+
+            return $response ?? [];
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting repair time types', [
+                'carTypeId' => $carTypeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get repair time subnodes by group
+     * This returns the tree of repair jobs for a specific repair time type
+     * 
+     * @param int $repairtimeTypeId The repair time type ID from getRepairtimeTypesV2
+     * @param string $typeCategory The type category (CAR or TRUCK)
+     * @param string $nodeId The node ID to get children for (use 'root' for top level)
+     * @param string|null $carTypeGroup Optional car type group (ENGINE, TRANSMISSION, etc.)
+     * @return array Array of repair time nodes
+     * @throws Exception If the API request fails
+     */
+    public function getRepairtimeSubnodesByGroupV4(int $repairtimeTypeId, string $typeCategory, string $nodeId, ?string $carTypeGroup = null): array
+    {
+        try {
+            Log::info('HaynesPro: Getting repair time subnodes', [
+                'repairtimeTypeId' => $repairtimeTypeId,
+                'typeCategory' => $typeCategory,
+                'nodeId' => $nodeId,
+                'carTypeGroup' => $carTypeGroup
+            ]);
+
+            $params = [
+                'descriptionLanguage' => 'en',
+                'repairtimeTypeId' => $repairtimeTypeId,
+                'typeCategory' => $typeCategory,
+                'nodeId' => $nodeId
+            ];
+
+            if ($carTypeGroup) {
+                $params['carTypeGroup'] = $carTypeGroup;
+            }
+
+            $response = $this->request('getRepairtimeSubnodesByGroupV4', $params, 'get');
+
+            Log::info('HaynesPro: Successfully retrieved repair time subnodes', [
+                'repairtimeTypeId' => $repairtimeTypeId,
+                'nodeId' => $nodeId,
+                'subnodes_count' => count($response ?? []),
+                'response' => $response
+            ]);
+
+            return $response ?? [];
+        } catch (Exception $e) {
+            Log::error('HaynesPro: Exception getting repair time subnodes', [
+                'repairtimeTypeId' => $repairtimeTypeId,
+                'nodeId' => $nodeId,
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Get repair time information for a vehicle by carTypeId and system group.
      * Based on getRepairtimeInfosV4 from HaynesPro API documentation
      *

@@ -158,6 +158,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [TechnicalInformationController::class, 'drawingsIndex'])->name('drawings.index');
     });
 
+    // Repair Times Routes
+    Route::prefix('vehicle/{registration}/repair-times')->group(function () {
+        Route::get('/', \App\Livewire\RepairTimes\Index::class)->name('repair-times.index');
+    });
+
     // Jobs routes  
     Route::get('/jobs', \App\Livewire\Jobs\Index::class)->name('workshop.jobs.index');
     Route::get('/jobs/create', \App\Livewire\Jobs\Upsert::class)->name('workshop.jobs.create');

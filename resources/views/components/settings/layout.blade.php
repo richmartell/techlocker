@@ -7,7 +7,6 @@
             <flux:navlist.item :href="route('settings.branding')" wire:navigate>{{ __('Branding') }}</flux:navlist.item>
             <flux:navlist.item :href="route('settings.labour')" wire:navigate>{{ __('Labour') }}</flux:navlist.item>
             <flux:navlist.item :href="route('settings.technicians.index')" wire:navigate>{{ __('Technicians') }}</flux:navlist.item>
-            <flux:navlist.item :href="route('settings.api')">{{ __('API Settings') }}</flux:navlist.item>
         </flux:navlist>
     </div>
 

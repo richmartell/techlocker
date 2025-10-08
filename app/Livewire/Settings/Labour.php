@@ -13,11 +13,13 @@ class Labour extends Component
     public Account $account;
     public string $hourly_labour_rate = '';
     public string $labour_loading_percentage = '';
+    public bool $vat_registered = false;
     public bool $hasUnsavedChanges = false;
 
     protected $rules = [
         'hourly_labour_rate' => 'required|numeric|min:0|max:9999.99',
         'labour_loading_percentage' => 'required|numeric|min:0|max:100',
+        'vat_registered' => 'boolean',
     ];
 
     protected $messages = [
@@ -39,6 +41,7 @@ class Labour extends Component
         // Load current settings
         $this->hourly_labour_rate = number_format($this->account->hourly_labour_rate, 2, '.', '');
         $this->labour_loading_percentage = number_format($this->account->labour_loading_percentage * 100, 2, '.', '');
+        $this->vat_registered = (bool) $this->account->vat_registered;
     }
 
     public function updated($propertyName)
@@ -55,6 +58,7 @@ class Labour extends Component
             $this->account->update([
                 'hourly_labour_rate' => (float) $this->hourly_labour_rate,
                 'labour_loading_percentage' => (float) $this->labour_loading_percentage / 100, // Convert percentage to decimal
+                'vat_registered' => $this->vat_registered,
             ]);
 
             $this->hasUnsavedChanges = false;
