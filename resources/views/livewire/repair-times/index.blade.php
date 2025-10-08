@@ -369,18 +369,6 @@
                         </flux:button>
                     </div>
                 </form>
-
-                <!-- Debug Info -->
-                <div class="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-700">
-                    <details class="text-sm">
-                        <summary class="cursor-pointer text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
-                            Show API Response Data
-                        </summary>
-                        <div class="mt-4 p-4 bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-auto">
-                            <pre class="text-xs">{{ json_encode($repairTimeTypes, JSON_PRETTY_PRINT) }}</pre>
-                        </div>
-                    </details>
-                </div>
             </div>
         </flux:card>
     @endif
