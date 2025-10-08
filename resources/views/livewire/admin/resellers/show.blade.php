@@ -68,7 +68,7 @@
                         </div>
 
                         <div>
-                            <label class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Member Since</label>
+                            <label class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Reseller Since</label>
                             <p class="text-zinc-900 dark:text-white mt-1">{{ $reseller->created_at->format('M d, Y') }}</p>
                         </div>
                     </div>
@@ -102,7 +102,7 @@
 
         <!-- Accounts & Commissions -->
         <div class="lg:col-span-2 space-y-6">
-            <!-- Commission Summary Cards -->
+            <!-- Summary Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <flux:card>
                     <div class="p-6">
@@ -115,19 +115,21 @@
 
                 <flux:card>
                     <div class="p-6">
-                        <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Paid Out</p>
+                        <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Active Customers</p>
                         <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
-                            £{{ number_format($reseller->total_commission_paid, 2) }}
+                            {{ $reseller->accounts()->where('status', 'active')->count() }}
                         </p>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Converted & Active</p>
                     </div>
                 </flux:card>
 
                 <flux:card>
                     <div class="p-6">
-                        <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Pending</p>
-                        <p class="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">
-                            £{{ number_format($reseller->pending_commission, 2) }}
+                        <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Current Trials</p>
+                        <p class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">
+                            {{ $reseller->accounts()->where('status', 'trial')->count() }}
                         </p>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Active Trial Accounts</p>
                     </div>
                 </flux:card>
             </div>

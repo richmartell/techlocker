@@ -97,19 +97,9 @@
                             @endif
                         </flux:table.cell>
                         <flux:table.cell>
-                            <div class="flex gap-2">
-                                <flux:button size="sm" href="{{ route('admin.resellers.show', $reseller) }}">
-                                    View
-                                </flux:button>
-                                <flux:button 
-                                    size="sm" 
-                                    variant="ghost"
-                                    wire:click="toggleStatus({{ $reseller->id }})"
-                                    wire:confirm="Are you sure you want to {{ $reseller->is_active ? 'deactivate' : 'activate' }} this reseller?"
-                                >
-                                    {{ $reseller->is_active ? 'Deactivate' : 'Activate' }}
-                                </flux:button>
-                            </div>
+                            <flux:button size="sm" href="{{ route('admin.resellers.show', $reseller) }}">
+                                View
+                            </flux:button>
                         </flux:table.cell>
                     </flux:table.row>
                 @empty
