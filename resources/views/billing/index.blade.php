@@ -24,6 +24,38 @@
                     </div>
                 @endif
 
+                <!-- Trial Status Banner -->
+                @if($isOnTrial)
+                    <div class="p-6 rounded-xl border-2 border-lime-400 dark:border-lime-500 bg-gradient-to-r from-lime-50 to-emerald-50 dark:from-lime-900/20 dark:to-emerald-900/20">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-lime-600 dark:text-lime-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <h3 class="text-xl font-bold text-lime-900 dark:text-lime-100 mb-2">
+                                    Free Trial Active
+                                </h3>
+                                <div class="space-y-2">
+                                    <p class="text-base text-lime-800 dark:text-lime-200">
+                                        You have <span class="font-bold text-lg">{{ $trialDaysRemaining }} {{ Str::plural('day', $trialDaysRemaining) }}</span> remaining in your trial period.
+                                    </p>
+                                    @if($trialDaysRemaining <= 7)
+                                        <p class="text-sm text-lime-700 dark:text-lime-300">
+                                            ⚠️ Your trial is ending soon. Subscribe to a plan to continue using garageIQ without interruption.
+                                        </p>
+                                    @else
+                                        <p class="text-sm text-lime-700 dark:text-lime-300">
+                                            Enjoy full access to all features. Subscribe anytime to continue after your trial ends.
+                                        </p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 @if($hasReseller)
                     <!-- Reseller-Managed Billing Section -->
                     <div class="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">

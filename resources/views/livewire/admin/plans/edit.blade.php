@@ -1,6 +1,6 @@
 <div>
     <div class="flex justify-between items-center mb-6">
-        <flux:heading size="xl">{{ $plan ? 'Edit Plan' : 'Create Plan' }}</flux:heading>
+        <flux:heading size="xl">Edit Plan</flux:heading>
         <flux:button href="{{ route('admin.plans.index') }}" variant="ghost">
             Back to Plans
         </flux:button>
@@ -214,7 +214,7 @@
             <!-- Submit Button -->
             <div class="flex gap-3 pt-4">
                 <flux:button type="submit" variant="primary">
-                    {{ $plan ? 'Update Plan' : 'Create Plan' }}
+                    Update Plan
                 </flux:button>
                 <flux:button type="button" variant="ghost" href="{{ route('admin.plans.index') }}">
                     Cancel

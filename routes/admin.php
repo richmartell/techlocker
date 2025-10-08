@@ -39,8 +39,8 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
     
     // Plans
     Route::get('/plans', \App\Livewire\Admin\Plans\Index::class)->name('plans.index');
-    Route::get('/plans/create', \App\Livewire\Admin\Plans\Upsert::class)->name('plans.create');
-    Route::get('/plans/{plan}/edit', \App\Livewire\Admin\Plans\Upsert::class)->name('plans.edit');
+    Route::get('/plans/create', \App\Livewire\Admin\Plans\Create::class)->name('plans.create');
+    Route::get('/plans/{plan}/edit', \App\Livewire\Admin\Plans\Edit::class)->name('plans.edit');
     
     // Invoices
     Route::get('/invoices', \App\Livewire\Admin\Invoices\Index::class)->name('invoices.index');

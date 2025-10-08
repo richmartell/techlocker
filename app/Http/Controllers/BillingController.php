@@ -15,6 +15,10 @@ class BillingController extends Controller
         $account = auth()->user()->account;
         $account->load(['plan', 'reseller']);
 
+        // Check trial status
+        $isOnTrial = $account->isOnTrial();
+        $trialDaysRemaining = $account->trialDaysRemaining();
+
         // Check if account has a reseller
         $hasReseller = !is_null($account->reseller_id) && $account->reseller;
 
@@ -25,6 +29,8 @@ class BillingController extends Controller
                 'hasReseller' => true,
                 'reseller' => $account->reseller,
                 'plan' => $account->plan,
+                'isOnTrial' => $isOnTrial,
+                'trialDaysRemaining' => $trialDaysRemaining,
             ]);
         }
 
@@ -39,6 +45,8 @@ class BillingController extends Controller
             'plan' => $account->plan,
             'subscription' => $subscription,
             'hasActiveSubscription' => $hasActiveSubscription,
+            'isOnTrial' => $isOnTrial,
+            'trialDaysRemaining' => $trialDaysRemaining,
         ]);
     }
 

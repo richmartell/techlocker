@@ -10,9 +10,9 @@ use Stripe\Stripe;
 use Stripe\Price;
 use Stripe\Exception\ApiErrorException;
 
-class Upsert extends Component
+class Edit extends Component
 {
-    public ?Plan $plan = null;
+    public Plan $plan;
 
     #[Rule('required|string|max:255')]
     public $name = '';
@@ -47,22 +47,20 @@ class Upsert extends Component
     public $stripePricesError = null;
     public $selectingPriceFor = null; // 'monthly' or 'yearly'
 
-    public function mount(?Plan $plan = null)
+    public function mount(Plan $plan)
     {
-        if ($plan && $plan->exists) {
-            $this->plan = $plan;
-            $this->name = $plan->name;
-            $this->description = $plan->description;
-            $this->max_users = $plan->max_users;
-            $this->max_customers = $plan->max_customers;
-            $this->max_searches = $plan->max_searches;
-            $this->is_active = $plan->is_active;
-            $this->stripe_monthly_price_id = $plan->stripe_monthly_price_id;
-            $this->stripe_yearly_price_id = $plan->stripe_yearly_price_id;
-            
-            // Load display prices from Stripe
-            $this->updatePriceDisplays();
-        }
+        $this->plan = $plan;
+        $this->name = $plan->name;
+        $this->description = $plan->description;
+        $this->max_users = $plan->max_users;
+        $this->max_customers = $plan->max_customers;
+        $this->max_searches = $plan->max_searches;
+        $this->is_active = $plan->is_active;
+        $this->stripe_monthly_price_id = $plan->stripe_monthly_price_id;
+        $this->stripe_yearly_price_id = $plan->stripe_yearly_price_id;
+        
+        // Load display prices from Stripe
+        $this->updatePriceDisplays();
     }
 
     public function save()
@@ -89,13 +87,8 @@ class Upsert extends Component
             $validated['price'] = 0;
         }
 
-        if ($this->plan) {
-            $this->plan->update($validated);
-            session()->flash('success', 'Plan updated successfully.');
-        } else {
-            Plan::create($validated);
-            session()->flash('success', 'Plan created successfully.');
-        }
+        $this->plan->update($validated);
+        session()->flash('success', 'Plan updated successfully.');
 
         return redirect()->route('admin.plans.index');
     }
@@ -256,6 +249,6 @@ class Upsert extends Component
     #[Layout('components.layouts.admin')]
     public function render()
     {
-        return view('livewire.admin.plans.upsert');
+        return view('livewire.admin.plans.edit');
     }
 }
