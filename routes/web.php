@@ -79,6 +79,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
     
+    // Branding Settings Route
+    Route::get('settings/branding', \App\Livewire\Settings\Branding::class)->name('settings.branding');
+    
     // Labour Settings Route
     Route::get('settings/labour', \App\Livewire\Settings\Labour::class)->name('settings.labour');
     
