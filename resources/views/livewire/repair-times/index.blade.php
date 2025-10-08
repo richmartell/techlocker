@@ -314,13 +314,12 @@
 
                                 <!-- Actions -->
                                 <div class="pt-4">
-                                    <flux:button variant="primary" class="w-full" disabled>
-                                        <flux:icon.document-text class="w-4 h-4 mr-2" />
-                                        Finalize Quote
+                                    <flux:button variant="primary" class="w-full" wire:click="openCustomerSearch">
+                                        <div class="flex items-center justify-center">
+                                            <flux:icon.document-text class="w-4 h-4 mr-2" />
+                                            <span>Finalize Quote</span>
+                                        </div>
                                     </flux:button>
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 text-center mt-2">
-                                        Quote finalization coming soon
-                                    </p>
                                 </div>
                             </div>
                         @endif
@@ -460,6 +459,204 @@
                         <span class="text-zinc-900 dark:text-white">Total:</span>
                         <span class="text-blue-600 dark:text-blue-400">£{{ number_format($this->quoteTotal, 2) }}</span>
                     </div>
+                </div>
+            @endif
+        </div>
+    </flux:modal>
+
+    <!-- Customer Search Modal -->
+    <flux:modal wire:model="showCustomerSearchModal" class="max-w-5xl">
+        <div class="p-6">
+            <flux:heading size="lg" class="mb-4">
+                @if($showCreateCustomer)
+                    Create New Customer
+                @elseif($showConfirmCustomer)
+                    Confirm Customer
+                @else
+                    Select Customer
+                @endif
+            </flux:heading>
+            
+            @if($showCreateCustomer)
+                <!-- Create Customer Form -->
+                <div>
+                    <div class="space-y-4 mb-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <flux:field>
+                                <flux:label>First Name *</flux:label>
+                                <flux:input wire:model="newCustomerFirstName" />
+                                <flux:error name="newCustomerFirstName" />
+                            </flux:field>
+                            
+                            <flux:field>
+                                <flux:label>Last Name *</flux:label>
+                                <flux:input wire:model="newCustomerLastName" />
+                                <flux:error name="newCustomerLastName" />
+                            </flux:field>
+                        </div>
+                        
+                        <flux:field>
+                            <flux:label>Email</flux:label>
+                            <flux:input type="email" wire:model="newCustomerEmail" />
+                            <flux:error name="newCustomerEmail" />
+                        </flux:field>
+                        
+                        <flux:field>
+                            <flux:label>Phone</flux:label>
+                            <flux:input type="tel" wire:model="newCustomerPhone" />
+                            <flux:error name="newCustomerPhone" />
+                        </flux:field>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <flux:button type="button" variant="outline" class="flex-1" wire:click="backToSearch">
+                            <div class="flex items-center justify-center">
+                                <flux:icon.arrow-left class="w-4 h-4 mr-2" />
+                                <span>Back</span>
+                            </div>
+                        </flux:button>
+                        <flux:button type="button" variant="primary" class="flex-1" wire:click="saveNewCustomer">
+                            <div class="flex items-center justify-center">
+                                <flux:icon.check class="w-4 h-4 mr-2" />
+                                <span>Create Customer</span>
+                            </div>
+                        </flux:button>
+                    </div>
+                </div>
+            @elseif(!$showConfirmCustomer)
+                <!-- Search Section -->
+                <div class="mb-6">
+                    <flux:field>
+                        <flux:label>Search by name, email, or registration</flux:label>
+                        <flux:input 
+                            wire:model.live.debounce.300ms="customerSearchTerm" 
+                            placeholder="Start typing to search..."
+                            type="text"
+                        />
+                    </flux:field>
+                </div>
+
+                <!-- Search Results -->
+                @if(strlen($customerSearchTerm) >= 2)
+                    <div class="mb-6">
+                        @if(count($searchResults) > 0)
+                            <div class="space-y-2">
+                                @foreach($searchResults as $customer)
+                                    <div 
+                                        wire:click="selectCustomer('{{ $customer->id }}')"
+                                        class="p-4 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition"
+                                    >
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex-1">
+                                                <p class="font-semibold text-zinc-900 dark:text-white">
+                                                    {{ $customer->first_name }} {{ $customer->last_name }}
+                                                </p>
+                                                @if($customer->email)
+                                                    <p class="text-sm text-zinc-600 dark:text-zinc-400">
+                                                        {{ $customer->email }}
+                                                    </p>
+                                                @endif
+                                                @if($customer->phone)
+                                                    <p class="text-sm text-zinc-600 dark:text-zinc-400">
+                                                        {{ $customer->phone }}
+                                                    </p>
+                                                @endif
+                                                @if($customer->vehicles && $customer->vehicles->count() > 0)
+                                                    <div class="mt-2 flex flex-wrap gap-2">
+                                                        @foreach($customer->vehicles as $vehicle)
+                                                            <flux:badge size="sm" color="zinc">
+                                                                {{ $vehicle->registration }}
+                                                            </flux:badge>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <flux:icon.chevron-right class="w-5 h-5 text-zinc-400" />
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-center py-8">
+                                <flux:icon.magnifying-glass class="w-12 h-12 mx-auto text-zinc-300 dark:text-zinc-600 mb-3" />
+                                <p class="text-zinc-600 dark:text-zinc-400">No customers found</p>
+                                <flux:button 
+                                    variant="primary" 
+                                    size="sm" 
+                                    class="mt-4"
+                                    wire:click="createNewCustomer"
+                                >
+                                    <div class="flex items-center">
+                                        <flux:icon.plus class="w-4 h-4 mr-2" />
+                                        <span>Create New Customer</span>
+                                    </div>
+                                </flux:button>
+                            </div>
+                        @endif
+                    </div>
+                @else
+                    <div class="text-center py-8">
+                        <flux:icon.magnifying-glass class="w-12 h-12 mx-auto text-zinc-300 dark:text-zinc-600 mb-3" />
+                        <p class="text-zinc-600 dark:text-zinc-400">Type at least 2 characters to search</p>
+                    </div>
+                @endif
+
+                <!-- Quick Action -->
+                <div class="pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                    <flux:button 
+                        variant="outline" 
+                        class="w-full"
+                        wire:click="createNewCustomer"
+                    >
+                        <div class="flex items-center justify-center">
+                            <flux:icon.plus class="w-4 h-4 mr-2" />
+                            <span>Create New Customer</span>
+                        </div>
+                    </flux:button>
+                </div>
+            @else
+                <!-- Confirm Customer -->
+                <div class="mb-6">
+                    <div class="p-6 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+                        <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-3">Confirm customer details:</p>
+                        <div class="space-y-2">
+                            <div>
+                                <p class="font-semibold text-lg text-zinc-900 dark:text-white">
+                                    {{ $selectedCustomer->first_name }} {{ $selectedCustomer->last_name }}
+                                </p>
+                            </div>
+                            @if($selectedCustomer->email)
+                                <div class="flex items-center text-sm text-zinc-600 dark:text-zinc-400">
+                                    <flux:icon.envelope class="w-4 h-4 mr-2" />
+                                    {{ $selectedCustomer->email }}
+                                </div>
+                            @endif
+                            @if($selectedCustomer->phone)
+                                <div class="flex items-center text-sm text-zinc-600 dark:text-zinc-400">
+                                    <flux:icon.phone class="w-4 h-4 mr-2" />
+                                    {{ $selectedCustomer->phone }}
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3">
+                    <flux:button 
+                        variant="outline" 
+                        class="flex-1"
+                        wire:click="$set('showConfirmCustomer', false)"
+                    >
+                        Back
+                    </flux:button>
+                    <flux:button 
+                        variant="primary" 
+                        class="flex-1"
+                        wire:click="confirmCustomerAndProceed"
+                    >
+                        Continue to Quote
+                    </flux:button>
                 </div>
             @endif
         </div>

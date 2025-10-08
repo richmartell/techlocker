@@ -163,6 +163,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', \App\Livewire\RepairTimes\Index::class)->name('repair-times.index');
     });
 
+    // Quotes Routes
+    Route::prefix('quotes')->group(function () {
+        Route::get('/create/{quote?}', \App\Livewire\Quotes\Create::class)->name('quotes.create');
+        Route::get('/{quote}', \App\Livewire\Quotes\Show::class)->name('quotes.show');
+        Route::get('/{quote}/pdf', [\App\Http\Controllers\QuoteController::class, 'downloadPdf'])->name('quotes.pdf');
+    });
+
     // Jobs routes  
     Route::get('/jobs', \App\Livewire\Jobs\Index::class)->name('workshop.jobs.index');
     Route::get('/jobs/create', \App\Livewire\Jobs\Upsert::class)->name('workshop.jobs.create');

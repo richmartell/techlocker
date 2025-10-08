@@ -4,8 +4,10 @@ namespace App\Livewire\RepairTimes;
 
 use Livewire\Component;
 use App\Models\Vehicle;
+use App\Models\Customer;
 use App\Services\HaynesPro;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class Index extends Component
@@ -26,10 +28,32 @@ class Index extends Component
     public $labourRate = 75.00; // Default, will be overridden from settings
     public $vatRate = 20; // Default UK VAT rate
     public $showQuoteModal = false; // Modal visibility
+    
+    // Customer search
+    public $showCustomerSearchModal = false;
+    public $customerSearchTerm = '';
+    public $searchResults = [];
+    public $selectedCustomer = null;
+    public $showConfirmCustomer = false;
+    public $showCreateCustomer = false;
+    
+    // Customer creation fields
+    public $newCustomerFirstName = '';
+    public $newCustomerLastName = '';
+    public $newCustomerEmail = '';
+    public $newCustomerPhone = '';
 
     public function mount(string $registration)
     {
         $this->vehicle = Vehicle::where('registration', $registration)->firstOrFail();
+        
+        // Load labour settings from account
+        $account = auth()->user()->account;
+        if ($account) {
+            $this->labourRate = $account->hourly_labour_rate ?? $this->labourRate;
+            $this->vatRate = $account->vat_registered ? 20 : 0;
+        }
+        
         $this->loadRepairTimeTypes();
     }
 
@@ -333,6 +357,262 @@ class Index extends Component
     public function getQuoteTotalProperty()
     {
         return $this->quoteTotalLabour + $this->quoteVat;
+    }
+    
+    // Customer Search and Quote Finalization
+    public function openCustomerSearch()
+    {
+        if (count($this->quoteItems) === 0) {
+            session()->flash('quote-error', 'Please add items to your quote first');
+            return;
+        }
+        
+        $this->showCustomerSearchModal = true;
+        $this->customerSearchTerm = '';
+        $this->searchResults = [];
+        $this->selectedCustomer = null;
+        $this->showConfirmCustomer = false;
+        $this->showCreateCustomer = false;
+        
+        // Reset customer creation fields
+        $this->newCustomerFirstName = '';
+        $this->newCustomerLastName = '';
+        $this->newCustomerEmail = '';
+        $this->newCustomerPhone = '';
+    }
+    
+    public function searchCustomers()
+    {
+        $this->searchResults = [];
+        $this->selectedCustomer = null;
+        $this->showConfirmCustomer = false;
+        
+        if (strlen($this->customerSearchTerm) < 2) {
+            return;
+        }
+        
+        $search = $this->customerSearchTerm;
+        $accountId = auth()->user()->account_id;
+        
+        // Search by name, email, organisation, or registration
+        $this->searchResults = Customer::where('account_id', $accountId)
+            ->where(function ($query) use ($search) {
+                // Search individual fields
+                $query->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('organisation', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    // Search concatenated full name (e.g., "Rich Martell")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"])
+                    // Search with last name first (e.g., "Martell Rich")
+                    ->orWhereRaw("CONCAT(last_name, ' ', first_name) LIKE ?", ["%{$search}%"])
+                    // Search vehicles
+                    ->orWhereHas('vehicles', function ($subQuery) use ($search) {
+                        $subQuery->where('registration', 'like', "%{$search}%");
+                    });
+            })
+            ->with('vehicles')
+            ->limit(10)
+            ->get();
+            
+        Log::info('Customer search completed', [
+            'search_term' => $search,
+            'results_count' => $this->searchResults->count()
+        ]);
+    }
+    
+    public function selectCustomer($customerId)
+    {
+        $this->selectedCustomer = Customer::with('vehicles')->find($customerId);
+        $this->showConfirmCustomer = true;
+    }
+    
+    public function confirmCustomerAndProceed()
+    {
+        if (!$this->selectedCustomer) {
+            return;
+        }
+        
+        // Link vehicle to customer if not already linked
+        $isLinked = $this->selectedCustomer->vehicles()
+            ->where('vehicle_id', $this->vehicle->id)
+            ->exists();
+            
+        if (!$isLinked) {
+            Log::info('Linking vehicle to customer', [
+                'customer_id' => $this->selectedCustomer->id,
+                'vehicle_id' => $this->vehicle->id,
+                'registration' => $this->vehicle->registration
+            ]);
+            
+            $this->selectedCustomer->linkVehicle(
+                $this->vehicle,
+                'owner', // Default relationship type
+                now()->format('Y-m-d'), // Owned from today
+                null // No end date (current owner)
+            );
+            
+            Log::info('Vehicle linked to customer successfully');
+        } else {
+            Log::info('Vehicle already linked to customer', [
+                'customer_id' => $this->selectedCustomer->id,
+                'vehicle_id' => $this->vehicle->id
+            ]);
+        }
+        
+        try {
+            DB::beginTransaction();
+            
+            // Calculate totals
+            $subtotal = array_sum(array_map(function($item) {
+                return ($item['time'] * $this->labourRate * $item['quantity']);
+            }, $this->quoteItems));
+            
+            $vatAmount = ($subtotal * $this->vatRate) / 100;
+            $total = $subtotal + $vatAmount;
+            
+            // Create draft quote in database
+            $quote = \App\Models\Quote::create([
+                'account_id' => auth()->user()->account_id,
+                'customer_id' => $this->selectedCustomer->id,
+                'vehicle_id' => $this->vehicle->id,
+                'status' => 'draft',
+                'labour_rate' => $this->labourRate,
+                'vat_rate' => $this->vatRate,
+                'subtotal' => $subtotal,
+                'vat_amount' => $vatAmount,
+                'total' => $total,
+                'valid_until' => now()->addDays(30),
+            ]);
+            
+            // Create quote items
+            $sortOrder = 0;
+            foreach ($this->quoteItems as $item) {
+                \App\Models\QuoteItem::create([
+                    'quote_id' => $quote->id,
+                    'description' => $item['description'],
+                    'time_hours' => $item['time'],
+                    'labour_rate' => $this->labourRate,
+                    'quantity' => $item['quantity'],
+                    'line_total' => ($item['time'] * $this->labourRate * $item['quantity']),
+                    'sort_order' => $sortOrder++,
+                ]);
+            }
+            
+            DB::commit();
+            
+            Log::info('Draft quote created', [
+                'quote_id' => $quote->id,
+                'items_count' => count($this->quoteItems)
+            ]);
+            
+            // Redirect to quote edit page
+            return redirect()->route('quotes.create', ['quote' => $quote->id]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to create draft quote', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            session()->flash('error', 'Failed to create quote: ' . $e->getMessage());
+        }
+    }
+    
+    public function createNewCustomer()
+    {
+        $this->showCreateCustomer = true;
+        $this->searchResults = [];
+        $this->customerSearchTerm = '';
+    }
+    
+    public function backToSearch()
+    {
+        $this->showCreateCustomer = false;
+        $this->showConfirmCustomer = false;
+        $this->newCustomerFirstName = '';
+        $this->newCustomerLastName = '';
+        $this->newCustomerEmail = '';
+        $this->newCustomerPhone = '';
+    }
+    
+    public function saveNewCustomer()
+    {
+        try {
+            $validated = $this->validate([
+                'newCustomerFirstName' => 'required|string|max:80',
+                'newCustomerLastName' => 'required|string|max:80',
+                'newCustomerEmail' => 'nullable|email|max:191',
+                'newCustomerPhone' => 'nullable|string|max:30',
+            ]);
+            
+            $accountId = auth()->user()->account_id;
+            
+            // Check for existing customer with same email
+            if ($this->newCustomerEmail) {
+                $existingCustomer = Customer::where('account_id', $accountId)
+                    ->where('email', $this->newCustomerEmail)
+                    ->first();
+                    
+                if ($existingCustomer) {
+                    Log::info('Found existing customer with email', [
+                        'customer_id' => $existingCustomer->id,
+                        'email' => $this->newCustomerEmail
+                    ]);
+                    
+                    // Automatically select the existing customer
+                    $this->selectedCustomer = $existingCustomer->load('vehicles');
+                    $this->showCreateCustomer = false;
+                    $this->showConfirmCustomer = true;
+                    
+                    session()->flash('info', 'Customer with this email already exists. Using existing customer.');
+                    return;
+                }
+            }
+            
+            Log::info('Creating new customer', [
+                'first_name' => $this->newCustomerFirstName,
+                'last_name' => $this->newCustomerLastName,
+                'account_id' => $accountId,
+            ]);
+            
+            $customer = Customer::create([
+                'account_id' => $accountId,
+                'first_name' => $this->newCustomerFirstName,
+                'last_name' => $this->newCustomerLastName,
+                'email' => $this->newCustomerEmail ?: null,
+                'phone' => $this->newCustomerPhone ?: null,
+                'source' => 'web',
+            ]);
+            
+            Log::info('Customer created successfully', ['customer_id' => $customer->id]);
+            
+            // Automatically select the new customer and proceed
+            $this->selectedCustomer = $customer->load('vehicles');
+            $this->showCreateCustomer = false;
+            $this->showConfirmCustomer = true;
+            
+            session()->flash('success', 'Customer created successfully');
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Customer validation failed', [
+                'errors' => $e->errors()
+            ]);
+            throw $e; // Re-throw to show validation errors
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to create customer', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Check if it's a duplicate entry error
+            if (str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), '1062')) {
+                $this->addError('newCustomerEmail', 'A customer with this email already exists. Please search for them instead or use a different email.');
+            } else {
+                $this->addError('newCustomerFirstName', 'Failed to create customer. Please try again.');
+            }
+        }
     }
 
     public function render()
