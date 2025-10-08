@@ -46,7 +46,7 @@
                 <flux:table.column>Reseller</flux:table.column>
                 <flux:table.column>Company</flux:table.column>
                 <flux:table.column>Accounts</flux:table.column>
-                <flux:table.column>Commission Rate</flux:table.column>
+                <flux:table.column>Pricing</flux:table.column>
                 <flux:table.column>Total Earned</flux:table.column>
                 <flux:table.column>Status</flux:table.column>
                 <flux:table.column>Actions</flux:table.column>
@@ -68,7 +68,21 @@
                             <flux:badge>{{ $reseller->accounts_count }}</flux:badge>
                         </flux:table.cell>
                         <flux:table.cell>
-                            <span class="text-sm font-medium text-zinc-900 dark:text-white">{{ $reseller->commission_rate }}%</span>
+                            <div class="flex gap-1">
+                                @if($reseller->planPrices->count() > 0)
+                                    <flux:badge color="green" size="sm">
+                                        {{ $reseller->planPrices->count() }} Custom
+                                    </flux:badge>
+                                @endif
+                                @if($reseller->fallback_discount_percentage > 0)
+                                    <flux:badge color="blue" size="sm">
+                                        {{ number_format($reseller->fallback_discount_percentage, 0) }}% Fallback
+                                    </flux:badge>
+                                @endif
+                                @if($reseller->planPrices->count() == 0 && $reseller->fallback_discount_percentage == 0)
+                                    <span class="text-xs text-zinc-500 dark:text-zinc-400">Not Set</span>
+                                @endif
+                            </div>
                         </flux:table.cell>
                         <flux:table.cell>
                             <span class="text-sm font-medium text-zinc-900 dark:text-white">

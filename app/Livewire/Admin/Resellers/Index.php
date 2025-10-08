@@ -31,6 +31,7 @@ class Index extends Component
     public function getResellersProperty()
     {
         return Reseller::query()
+            ->with('planPrices')
             ->withCount('accounts')
             ->withSum('commissions', 'amount')
             ->when($this->search, function ($query) {
