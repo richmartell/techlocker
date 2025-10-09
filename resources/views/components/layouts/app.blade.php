@@ -18,6 +18,7 @@
                 <flux:navbar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Home</flux:navbar.item>
                 <flux:navbar.item icon="users" :href="route('customers.index')" :current="request()->routeIs('customers.*')" wire:navigate>Customers</flux:navbar.item>
                 <flux:navbar.item icon="wrench-screwdriver" :href="route('workshop.jobs.index')" :current="request()->routeIs('workshop.jobs.*')" wire:navigate>Jobs</flux:navbar.item>
+                <flux:navbar.item icon="document-text" :href="route('quotes.index')" :current="request()->routeIs('quotes.*')" wire:navigate>Quotes</flux:navbar.item>
                 <flux:navbar.item icon="magnifying-glass" :href="route('vehicle-lookup')" :current="request()->routeIs('vehicle-lookup')" wire:navigate>Vehicle Search</flux:navbar.item>
             </flux:navbar>
             
@@ -65,6 +66,7 @@
                 <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Home</flux:navlist.item>
                 <flux:navlist.item icon="users" :href="route('customers.index')" :current="request()->routeIs('customers.*')" wire:navigate>Customers</flux:navlist.item>
                 <flux:navlist.item icon="wrench-screwdriver" :href="route('workshop.jobs.index')" :current="request()->routeIs('workshop.jobs.*')" wire:navigate>Jobs</flux:navlist.item>
+                <flux:navlist.item icon="document-text" :href="route('quotes.index')" :current="request()->routeIs('quotes.*')" wire:navigate>Quotes</flux:navlist.item>
                 <flux:navlist.item icon="magnifying-glass" :href="route('vehicle-lookup')" :current="request()->routeIs('vehicle-lookup')" wire:navigate>Vehicle Search</flux:navlist.item>
             </flux:navlist>
             

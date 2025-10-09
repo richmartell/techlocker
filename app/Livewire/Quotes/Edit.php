@@ -5,20 +5,17 @@ namespace App\Livewire\Quotes;
 use Livewire\Component;
 use App\Models\Quote;
 use App\Models\QuoteItem;
-use App\Models\Customer;
-use App\Models\Vehicle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class Create extends Component
+class Edit extends Component
 {
-    public $quote;
-    public $customer;
-    public $vehicle;
+    public Quote $quote;
+    public $status;
     public $quoteItems = [];
-    public $labourRate = 75.00;
-    public $vatRate = 20;
-    public $notes = '';
+    public $labourRate;
+    public $vatRate;
+    public $notes;
     public $validUntil;
     
     // Add item modal
@@ -35,46 +32,32 @@ class Create extends Component
     public $newItemPartName = '';
     public $newItemUnitPrice = '';
     
-    public function mount(?Quote $quote = null)
+    public function mount(Quote $quote)
     {
-        // Load labour settings from account
-        $account = auth()->user()->account;
-        if ($account) {
-            $this->labourRate = $account->hourly_labour_rate ?? $this->labourRate;
-            $this->vatRate = $account->vat_registered ? 20 : 0;
+        // Verify the quote belongs to the user's account
+        if ($quote->account_id !== auth()->user()->account_id) {
+            abort(403);
         }
         
-        if ($quote && $quote->exists) {
-            // Load existing draft quote
-            $this->quote = $quote->load(['customer', 'vehicle.make', 'vehicle.model', 'items']);
-            $this->customer = $this->quote->customer;
-            $this->vehicle = $this->quote->vehicle;
-            $this->labourRate = $this->quote->labour_rate;
-            $this->vatRate = $this->quote->vat_rate;
-            $this->notes = $this->quote->notes ?? '';
-            $this->validUntil = $this->quote->valid_until?->format('Y-m-d') ?? now()->addDays(30)->format('Y-m-d');
-            
-            // Load quote items
-            foreach ($this->quote->items as $item) {
-                $this->quoteItems['item_' . $item->id] = [
-                    'id' => $item->id,
-                    'type' => $item->type,
-                    'description' => $item->description,
-                    'time' => $item->time_hours,
-                    'quantity' => $item->quantity,
-                    'unit_price' => $item->unit_price,
-                ];
-            }
-            
-            Log::info('Existing quote loaded', [
-                'quote_id' => $this->quote->id,
-                'items_count' => count($this->quoteItems)
-            ]);
-        } else {
-            // Set default valid until date (30 days from now)
-            $this->validUntil = now()->addDays(30)->format('Y-m-d');
-            
-            Log::warning('No quote provided to Create component');
+        $this->quote = $quote->load(['customer', 'vehicle', 'items']);
+        $this->status = $quote->status;
+        $this->labourRate = $quote->labour_rate;
+        $this->vatRate = $quote->vat_rate;
+        $this->notes = $quote->notes ?? '';
+        $this->validUntil = $quote->valid_until?->format('Y-m-d') ?? now()->addDays(30)->format('Y-m-d');
+        
+        // Load quote items
+        foreach ($quote->items as $item) {
+            $this->quoteItems[$item->id] = [
+                'id' => $item->id,
+                'type' => $item->type,
+                'description' => $item->description,
+                'time_hours' => $item->time_hours,
+                'quantity' => $item->quantity,
+                'part_number' => $item->part_number,
+                'part_name' => $item->part_name,
+                'unit_price' => $item->unit_price,
+            ];
         }
     }
     
@@ -82,6 +65,20 @@ class Create extends Component
     {
         if (isset($this->quoteItems[$itemId])) {
             $this->quoteItems[$itemId]['quantity'] = max(1, (int) $quantity);
+        }
+    }
+    
+    public function updateItemTime($itemId, $time)
+    {
+        if (isset($this->quoteItems[$itemId])) {
+            $this->quoteItems[$itemId]['time_hours'] = max(0, (float) $time);
+        }
+    }
+    
+    public function updateItemUnitPrice($itemId, $price)
+    {
+        if (isset($this->quoteItems[$itemId])) {
+            $this->quoteItems[$itemId]['unit_price'] = max(0, (float) $price);
         }
     }
     
@@ -104,8 +101,10 @@ class Create extends Component
                 'id' => $tempId,
                 'type' => 'labour',
                 'description' => $this->newItemDescription,
-                'time' => (float) $this->newItemTimeHours,
+                'time_hours' => (float) $this->newItemTimeHours,
                 'quantity' => (int) $this->newItemQuantity,
+                'part_number' => null,
+                'part_name' => null,
                 'unit_price' => null,
             ];
             
@@ -127,8 +126,10 @@ class Create extends Component
                 'id' => $tempId,
                 'type' => 'parts',
                 'description' => $this->newItemPartName, // Use part name as description
-                'time' => null,
+                'time_hours' => null,
                 'quantity' => (int) $this->newItemQuantity,
+                'part_number' => $this->newItemPartNumber ?: null,
+                'part_name' => $this->newItemPartName,
                 'unit_price' => (float) $this->newItemUnitPrice,
             ];
             
@@ -146,11 +147,11 @@ class Create extends Component
     public function getSubtotalProperty()
     {
         return array_sum(array_map(function($item) {
-            if (isset($item['type']) && $item['type'] === 'parts') {
+            if ($item['type'] === 'parts') {
                 return ($item['unit_price'] * $item['quantity']);
             } else {
-                // Labour (default for items from quote builder)
-                return ($item['time'] * $this->labourRate * $item['quantity']);
+                // Labour
+                return ($item['time_hours'] * $this->labourRate * $item['quantity']);
             }
         }, $this->quoteItems));
     }
@@ -165,9 +166,12 @@ class Create extends Component
         return $this->subtotal + $this->vatAmount;
     }
     
-    public function saveQuote()
+    public function save()
     {
         $this->validate([
+            'status' => 'required|in:draft,sent,approved,declined',
+            'labourRate' => 'required|numeric|min:0',
+            'vatRate' => 'required|numeric|min:0|max:100',
             'notes' => 'nullable|string|max:5000',
             'validUntil' => 'required|date|after:today',
         ]);
@@ -180,8 +184,9 @@ class Create extends Component
         try {
             DB::beginTransaction();
             
-            // Update the existing quote
+            // Update the quote
             $this->quote->update([
+                'status' => $this->status,
                 'labour_rate' => $this->labourRate,
                 'vat_rate' => $this->vatRate,
                 'subtotal' => $this->subtotal,
@@ -189,36 +194,36 @@ class Create extends Component
                 'total' => $this->total,
                 'notes' => $this->notes,
                 'valid_until' => $this->validUntil,
-                'status' => 'sent', // Update status from draft to sent
             ]);
             
-            // Delete existing items
+            // Delete all existing items
             $this->quote->items()->delete();
             
-            // Create updated quote items
+            // Create updated/new items
             $sortOrder = 0;
             foreach ($this->quoteItems as $item) {
-                $itemType = $item['type'] ?? 'labour'; // Default to labour for backward compatibility
-                
-                if ($itemType === 'parts') {
+                if ($item['type'] === 'parts') {
                     QuoteItem::create([
                         'quote_id' => $this->quote->id,
                         'type' => 'parts',
                         'description' => $item['description'],
+                        'part_number' => $item['part_number'],
+                        'part_name' => $item['part_name'],
                         'unit_price' => $item['unit_price'],
                         'quantity' => $item['quantity'],
                         'line_total' => ($item['unit_price'] * $item['quantity']),
                         'sort_order' => $sortOrder++,
                     ]);
                 } else {
+                    // Labour
                     QuoteItem::create([
                         'quote_id' => $this->quote->id,
                         'type' => 'labour',
                         'description' => $item['description'],
-                        'time_hours' => $item['time'],
+                        'time_hours' => $item['time_hours'],
                         'labour_rate' => $this->labourRate,
                         'quantity' => $item['quantity'],
-                        'line_total' => ($item['time'] * $this->labourRate * $item['quantity']),
+                        'line_total' => ($item['time_hours'] * $this->labourRate * $item['quantity']),
                         'sort_order' => $sortOrder++,
                     ]);
                 }
@@ -226,22 +231,22 @@ class Create extends Component
             
             DB::commit();
             
-            session()->flash('success', 'Quote saved successfully!');
+            session()->flash('success', 'Quote updated successfully!');
             
             return redirect()->route('quotes.show', $this->quote->id);
             
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to save quote', [
+            Log::error('Failed to update quote', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            session()->flash('error', 'Failed to save quote: ' . $e->getMessage());
+            session()->flash('error', 'Failed to update quote: ' . $e->getMessage());
         }
     }
 
     public function render()
     {
-        return view('livewire.quotes.create')->layout('components.layouts.app');
+        return view('livewire.quotes.edit')->layout('components.layouts.app');
     }
 }

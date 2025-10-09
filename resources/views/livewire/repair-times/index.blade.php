@@ -103,48 +103,51 @@
                                 class="w-full p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left"
                                 @if(!isset($node['id'])) disabled @endif
                             >
-                                <div class="flex items-start justify-between">
-                                    <div class="flex-1">
-                                        <div class="flex items-center gap-2">
-                                            @if(isset($node['hasSubnodes']) && $node['hasSubnodes'])
-                                                <svg 
-                                                    class="w-5 h-5 text-zinc-500 transition-transform {{ isset($expandedNodes[$node['id']]) ? 'rotate-90' : '' }}"
-                                                    fill="none" 
-                                                    stroke="currentColor" 
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                                </svg>
-                                            @else
-                                                <div class="w-5 h-5"></div>
-                                            @endif
-                                            
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="flex items-center gap-2 flex-1">
+                                        @if(isset($node['hasSubnodes']) && $node['hasSubnodes'])
+                                            <svg 
+                                                class="w-5 h-5 text-zinc-500 transition-transform {{ isset($expandedNodes[$node['id']]) ? 'rotate-90' : '' }}"
+                                                fill="none" 
+                                                stroke="currentColor" 
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                            </svg>
+                                        @else
+                                            <div class="w-5 h-5"></div>
+                                        @endif
+                                        
+                                        <div class="flex-1">
                                             <h3 class="font-semibold text-zinc-900 dark:text-white">
                                                 {{ $node['description'] ?? $node['name'] ?? 'Unknown' }}
                                             </h3>
                                             
-                                            @if($loadingNodeId === ($node['id'] ?? null))
-                                                <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                            @endif
-                                        </div>
-                                        
-                                        @if(isset($node['value']) && $node['value'] > 0)
-                                            <div class="mt-2 ml-7 flex items-center justify-between">
-                                                <div class="text-sm text-zinc-600 dark:text-zinc-400">
+                                            @if(isset($node['value']) && $node['value'] > 0)
+                                                <div class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
                                                     <span class="font-semibold">Time:</span> {{ number_format($node['value'] / 100, 2) }} hrs
                                                 </div>
-                                                
-                                                <flux:button 
-                                                    size="xs" 
-                                                    variant="primary"
-                                                    wire:click.stop="addToQuote('{{ $node['id'] }}', '{{ addslashes($node['description'] ?? $node['name'] ?? 'Unknown') }}', {{ $node['value'] }}, '{{ $node['awNumber'] ?? '' }}')"
-                                                >
-                                                    <flux:icon.plus class="w-3 h-3" />
-                                                </flux:button>
-                                            </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center gap-2">
+                                        @if($loadingNodeId === ($node['id'] ?? null))
+                                            <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        @endif
+                                        
+                                        @if(isset($node['value']) && $node['value'] > 0)
+                                            <flux:button 
+                                                size="xs" 
+                                                variant="primary"
+                                                wire:click.stop="addToQuote('{{ $node['id'] }}', '{{ addslashes($node['description'] ?? $node['name'] ?? 'Unknown') }}', {{ $node['value'] }}, '{{ $node['awNumber'] ?? '' }}')"
+                                                class="mr-2"
+                                            >
+                                                <flux:icon.plus class="w-3 h-3" />
+                                            </flux:button>
                                         @endif
                                     </div>
                                 </div>
@@ -162,47 +165,54 @@
                                                     class="w-full pl-7 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left"
                                                     @if(!isset($subnode['id'])) disabled @endif
                                                 >
-                                                    <div class="flex items-center gap-2">
-                                                        @if(isset($subnode['hasSubnodes']) && $subnode['hasSubnodes'])
-                                                            <svg 
-                                                                class="w-4 h-4 text-zinc-500 transition-transform {{ isset($expandedNodes[$subnode['id']]) ? 'rotate-90' : '' }}"
-                                                                fill="none" 
-                                                                stroke="currentColor" 
-                                                                viewBox="0 0 24 24"
-                                                            >
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                                            </svg>
-                                                        @else
-                                                            <div class="w-4 h-4"></div>
-                                                        @endif
-                                                        
-                                                        <div class="font-medium text-zinc-900 dark:text-white">
-                                                            {{ $subnode['description'] ?? $subnode['name'] ?? 'Unknown' }}
-                                                        </div>
-                                                        
-                                                        @if($loadingNodeId === ($subnode['id'] ?? null))
-                                                            <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                            </svg>
-                                                        @endif
-                                                    </div>
-                                                    
-                                                    @if(isset($subnode['value']) && $subnode['value'] > 0)
-                                                        <div class="mt-1 ml-6 flex items-center justify-between">
-                                                            <div class="text-sm text-zinc-600 dark:text-zinc-400">
-                                                                <span class="font-semibold">Time:</span> {{ number_format($subnode['value'] / 100, 2) }} hrs
-                                                            </div>
+                                                    <div class="flex items-center justify-between gap-4">
+                                                        <div class="flex items-center gap-2 flex-1">
+                                                            @if(isset($subnode['hasSubnodes']) && $subnode['hasSubnodes'])
+                                                                <svg 
+                                                                    class="w-4 h-4 text-zinc-500 transition-transform {{ isset($expandedNodes[$subnode['id']]) ? 'rotate-90' : '' }}"
+                                                                    fill="none" 
+                                                                    stroke="currentColor" 
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                                                </svg>
+                                                            @else
+                                                                <div class="w-4 h-4"></div>
+                                                            @endif
                                                             
-                                                            <flux:button 
-                                                                size="xs" 
-                                                                variant="primary"
-                                                                wire:click.stop="addToQuote('{{ $subnode['id'] }}', '{{ addslashes($subnode['description'] ?? $subnode['name'] ?? 'Unknown') }}', {{ $subnode['value'] }}, '{{ $subnode['awNumber'] ?? '' }}')"
-                                                            >
-                                                                <flux:icon.plus class="w-3 h-3" />
-                                                            </flux:button>
+                                                            <div class="flex-1">
+                                                                <div class="font-medium text-zinc-900 dark:text-white">
+                                                                    {{ $subnode['description'] ?? $subnode['name'] ?? 'Unknown' }}
+                                                                </div>
+                                                                
+                                                                @if(isset($subnode['value']) && $subnode['value'] > 0)
+                                                                    <div class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                                                                        <span class="font-semibold">Time:</span> {{ number_format($subnode['value'] / 100, 2) }} hrs
+                                                                    </div>
+                                                                @endif
+                                                            </div>
                                                         </div>
-                                                    @endif
+                                                        
+                                                        <div class="flex items-center gap-2">
+                                                            @if($loadingNodeId === ($subnode['id'] ?? null))
+                                                                <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                </svg>
+                                                            @endif
+                                                            
+                                                            @if(isset($subnode['value']) && $subnode['value'] > 0)
+                                                                <flux:button 
+                                                                    size="xs" 
+                                                                    variant="primary"
+                                                                    wire:click.stop="addToQuote('{{ $subnode['id'] }}', '{{ addslashes($subnode['description'] ?? $subnode['name'] ?? 'Unknown') }}', {{ $subnode['value'] }}, '{{ $subnode['awNumber'] ?? '' }}')"
+                                                                    class="mr-2"
+                                                                >
+                                                                    <flux:icon.plus class="w-3 h-3" />
+                                                                </flux:button>
+                                                            @endif
+                                                        </div>
+                                                    </div>
                                                 </button>
 
                                                 <!-- Level 2 Subnodes (if expanded) -->
@@ -227,6 +237,7 @@
                                                                                 size="xs" 
                                                                                 variant="primary"
                                                                                 wire:click="addToQuote('{{ $subsubnode['id'] }}', '{{ addslashes($subsubnode['description'] ?? $subsubnode['name'] ?? 'Unknown') }}', {{ $subsubnode['value'] }}, '{{ $subsubnode['awNumber'] ?? '' }}')"
+                                                                                class="mr-2"
                                                                             >
                                                                                 <flux:icon.plus class="w-3 h-3" />
                                                                             </flux:button>

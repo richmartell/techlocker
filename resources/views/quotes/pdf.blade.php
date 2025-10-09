@@ -125,12 +125,16 @@
             background-color: #f8f9fa;
         }
         
-        .items-table .description {
-            width: 45%;
+        .items-table .type {
+            width: 10%;
         }
         
-        .items-table .time {
-            width: 15%;
+        .items-table .description {
+            width: 40%;
+        }
+        
+        .items-table .details {
+            width: 20%;
             text-align: center;
         }
         
@@ -148,6 +152,25 @@
             width: 15%;
             text-align: right;
             font-weight: bold;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .badge-labour {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .badge-parts {
+            background-color: #d1fae5;
+            color: #065f46;
         }
         
         .totals-section {
@@ -319,9 +342,10 @@
         <table class="items-table">
             <thead>
                 <tr>
+                    <th class="type">Type</th>
                     <th class="description">Description</th>
-                    <th class="time">Time (hrs)</th>
-                    <th class="rate">Rate</th>
+                    <th class="details">Details</th>
+                    <th class="rate">Rate/Price</th>
                     <th class="qty">Qty</th>
                     <th class="total">Total</th>
                 </tr>
@@ -329,9 +353,29 @@
             <tbody>
                 @foreach($quote->items as $item)
                     <tr>
-                        <td class="description">{{ $item->description }}</td>
-                        <td class="time">{{ number_format($item->time_hours, 2) }}</td>
-                        <td class="rate">£{{ number_format($item->labour_rate, 2) }}</td>
+                        <td class="type">
+                            <span class="badge badge-{{ $item->type }}">{{ ucfirst($item->type) }}</span>
+                        </td>
+                        <td class="description">
+                            {{ $item->description }}
+                            @if($item->type === 'parts' && $item->part_number)
+                                <br><span style="font-size: 8pt; color: #666;">Part #: {{ $item->part_number }}</span>
+                            @endif
+                        </td>
+                        <td class="details">
+                            @if($item->type === 'labour')
+                                {{ number_format($item->time_hours, 2) }} hrs
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td class="rate">
+                            @if($item->type === 'labour')
+                                £{{ number_format($item->labour_rate, 2) }}/hr
+                            @else
+                                £{{ number_format($item->unit_price, 2) }}
+                            @endif
+                        </td>
                         <td class="qty">{{ $item->quantity }}</td>
                         <td class="total">£{{ number_format($item->line_total, 2) }}</td>
                     </tr>

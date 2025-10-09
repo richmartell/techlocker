@@ -4,6 +4,7 @@ namespace App\Livewire\Customers;
 
 use App\Models\Customer;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Upsert extends Component
@@ -14,17 +15,18 @@ class Upsert extends Component
     public bool $isEditing = false;
 
     // Form fields
-    public string $first_name = '';
-    public string $last_name = '';
-    public string $email = '';
-    public string $phone = '';
-    public string $notes = '';
+    public ?string $first_name = '';
+    public ?string $last_name = '';
+    public ?string $organisation = '';
+    public ?string $email = '';
+    public ?string $phone = '';
+    public ?string $notes = '';
     public array $tags = [];
-    public string $source = '';
+    public ?string $source = '';
 
     // UI state
     public bool $showModal = false;
-    public string $newTag = '';
+    public ?string $newTag = '';
 
     protected function rules()
     {
@@ -41,26 +43,28 @@ class Upsert extends Component
 
     public function mount(?Customer $customer = null): void
     {
-        \Log::info('🧪 UPSERT MOUNT - customer provided: ' . ($customer ? 'YES (ID: ' . $customer->id . ')' : 'NO'));
+        \Log::info('🧪 UPSERT MOUNT - customer provided: ' . ($customer ? 'YES (ID: ' . ($customer->id ?? 'NULL') . ')' : 'NO'));
         
         try {
-            if ($customer) {
+            // Check if we have a valid customer with an ID (edit mode)
+            if ($customer && $customer->exists) {
                 // Edit mode - customer passed from Show page
                 $this->authorize('update', $customer);
                 $this->customer = $customer;
                 $this->isEditing = true;
                 $this->loadCustomerData();
+                $this->showModal = true; // Auto-show modal when editing
                 \Log::info('Upsert - edit mode set for customer: ' . $customer->full_name);
             } else {
                 // Create mode - no customer passed (from Index page)
-                $this->authorize('create', Customer::class);
+                // Authorization will be checked in save() method
                 $this->isEditing = false;
+                $this->showModal = false; // Don't auto-show for create mode
                 \Log::info('Upsert - create mode set');
             }
-            
-            $this->showModal = true;
+
             \Log::info('Upsert component mounted successfully - isEditing: ' . ($this->isEditing ? 'true' : 'false'));
-            
+
         } catch (\Exception $e) {
             \Log::error('Upsert mount error: ' . $e->getMessage());
             session()->flash('error', 'Failed to load customer form: ' . $e->getMessage());
@@ -73,6 +77,7 @@ class Upsert extends Component
         if ($this->customer) {
             $this->first_name = $this->customer->first_name;
             $this->last_name = $this->customer->last_name;
+            $this->organisation = $this->customer->organisation ?? '';
             $this->email = $this->customer->email ?? '';
             $this->phone = $this->customer->phone ?? '';
             $this->notes = $this->customer->notes ?? '';
@@ -81,15 +86,15 @@ class Upsert extends Component
         }
     }
 
+    #[On('openCustomerModal')]
     public function openModal(?Customer $customer = null)
     {
-        if ($customer) {
-            $this->authorize('update', $customer);
+        // Only treat as edit mode if we have a valid existing customer
+        if ($customer && $customer->exists) {
             $this->isEditing = true;
             $this->customer = $customer;
             $this->loadCustomerData();
         } else {
-            $this->authorize('create', Customer::class);
             $this->isEditing = false;
             $this->resetForm();
         }
@@ -111,6 +116,7 @@ class Upsert extends Component
     {
         $this->first_name = '';
         $this->last_name = '';
+        $this->organisation = '';
         $this->email = '';
         $this->phone = '';
         $this->notes = '';
@@ -145,6 +151,7 @@ class Upsert extends Component
             $data = [
                 'first_name' => trim($this->first_name),
                 'last_name' => trim($this->last_name),
+                'organisation' => $this->organisation ? trim($this->organisation) : null,
                 'email' => $this->email ? trim($this->email) : null,
                 'phone' => $this->phone ? trim($this->phone) : null,
                 'notes' => $this->notes ? trim($this->notes) : null,
@@ -153,9 +160,13 @@ class Upsert extends Component
             ];
 
             if ($this->isEditing && $this->customer) {
+                $this->authorize('update', $this->customer);
                 $this->customer->update($data);
                 $message = "Customer '{$this->customer->full_name}' has been updated successfully.";
             } else {
+                $this->authorize('create', Customer::class);
+                // Add account_id for new customers
+                $data['account_id'] = auth()->user()->account_id;
                 $this->customer = Customer::create($data);
                 $message = "Customer '{$this->customer->full_name}' has been created successfully.";
             }

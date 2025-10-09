@@ -35,6 +35,21 @@
                     </flux:field>
                 </div>
             </div>
+            
+            {{-- Organisation --}}
+            <div>
+                <flux:field>
+                    <flux:label>Organisation</flux:label>
+                    <flux:input 
+                        wire:model="organisation" 
+                        placeholder="e.g. Company Name Ltd"
+                        icon="building-office-2"
+                        :error="$errors->first('organisation')"
+                    />
+                    <flux:error name="organisation" />
+                    <flux:description>Optional: Company or organisation name</flux:description>
+                </flux:field>
+            </div>
 
             {{-- Contact Information --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -282,14 +282,8 @@
         @endif
     </flux:card>
 
-    {{-- Customer Upsert Modal - TESTING SIMPLE CONTENT --}}
-    @if($showCreateModal)
-        <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
-                @livewire('customers.upsert')
-            </div>
-        </div>
-    @endif
+    {{-- Customer Upsert Modal --}}
+    @livewire('customers.upsert')
 
     {{-- Delete Confirmation Modal --}}
     @if($showDeleteModal)

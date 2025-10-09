@@ -73,7 +73,15 @@
     <!-- Quote Items -->
     <flux:card class="mb-8">
         <div class="p-6">
-            <flux:heading size="lg" class="mb-4">Quote Items</flux:heading>
+            <div class="flex items-center justify-between mb-4">
+                <flux:heading size="lg">Quote Items</flux:heading>
+                <flux:button wire:click="$set('showAddItemModal', true)" variant="primary">
+                    <div class="flex items-center justify-center">
+                        <flux:icon.plus class="w-4 h-4 mr-2" />
+                        <span>Add Item</span>
+                    </div>
+                </flux:button>
+            </div>
             
             @if(count($quoteItems) > 0)
                 <div class="space-y-3">
@@ -89,7 +97,7 @@
                                             <span class="font-semibold">Time:</span> 
                                             {{ number_format($item['time'], 2) }} hrs
                                         </div>
-                                        <div>
+<div>
                                             <span class="font-semibold">Rate:</span> 
                                             £{{ number_format($labourRate, 2) }}/hr
                                         </div>
@@ -149,7 +157,7 @@
             @else
                 <div class="text-center py-8">
                     <flux:icon.document-text class="w-12 h-12 mx-auto text-zinc-300 dark:text-zinc-600 mb-3" />
-                    <p class="text-zinc-600 dark:text-zinc-400">No items in quote</p>
+                    <p class="text-zinc-600 dark:text-zinc-400">No items yet. Click "Add Item" to get started.</p>
                 </div>
             @endif
         </div>
@@ -207,4 +215,133 @@
             </flux:button>
         </div>
     </div>
+
+    <!-- Add Item Modal -->
+    <flux:modal wire:model="showAddItemModal" class="max-w-3xl">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <flux:heading size="lg">Add New Item</flux:heading>
+                
+                <!-- Item Type Selector -->
+                <div class="flex gap-2">
+                    <flux:button 
+                        size="sm"
+                        :variant="$newItemType === 'labour' ? 'primary' : 'outline'"
+                        wire:click="$set('newItemType', 'labour')"
+                    >
+                        Labour
+                    </flux:button>
+                    <flux:button 
+                        size="sm"
+                        :variant="$newItemType === 'parts' ? 'primary' : 'outline'"
+                        wire:click="$set('newItemType', 'parts')"
+                    >
+                        Parts
+                    </flux:button>
+                </div>
+            </div>
+            
+            @if($newItemType === 'labour')
+                <!-- Labour Form -->
+                <div class="space-y-4 mb-6">
+                    <flux:field>
+                        <flux:label>Description</flux:label>
+                        <flux:input 
+                            wire:model="newItemDescription" 
+                            placeholder="e.g., Oil change, Brake service..."
+                        />
+                        <flux:error name="newItemDescription" />
+                    </flux:field>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <flux:field>
+                            <flux:label>Time (hours)</flux:label>
+                            <flux:input 
+                                type="number" 
+                                step="0.1"
+                                min="0"
+                                wire:model="newItemTimeHours"
+                                placeholder="0.5"
+                            />
+                            <flux:error name="newItemTimeHours" />
+                        </flux:field>
+                        
+                        <flux:field>
+                            <flux:label>Quantity</flux:label>
+                            <flux:input 
+                                type="number" 
+                                min="1"
+                                wire:model="newItemQuantity"
+                            />
+                            <flux:error name="newItemQuantity" />
+                        </flux:field>
+                    </div>
+                </div>
+            @else
+                <!-- Parts Form -->
+                <div class="space-y-4 mb-6">
+                    <flux:field>
+                        <flux:label>Part Number (optional)</flux:label>
+                        <flux:input 
+                            wire:model="newItemPartNumber" 
+                            placeholder="Optional"
+                        />
+                        <flux:error name="newItemPartNumber" />
+                    </flux:field>
+                    
+                    <flux:field>
+                        <flux:label>Part Name</flux:label>
+                        <flux:input 
+                            wire:model="newItemPartName" 
+                            placeholder="e.g., Oil filter, Brake pads..."
+                        />
+                        <flux:error name="newItemPartName" />
+                    </flux:field>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <flux:field>
+                            <flux:label>Unit Price (£)</flux:label>
+                            <flux:input 
+                                type="number" 
+                                step="0.01"
+                                min="0"
+                                wire:model="newItemUnitPrice"
+                                placeholder="0.00"
+                            />
+                            <flux:error name="newItemUnitPrice" />
+                        </flux:field>
+                        
+                        <flux:field>
+                            <flux:label>Quantity</flux:label>
+                            <flux:input 
+                                type="number" 
+                                min="1"
+                                wire:model="newItemQuantity"
+                            />
+                            <flux:error name="newItemQuantity" />
+                        </flux:field>
+                    </div>
+                </div>
+            @endif
+            
+            <!-- Modal Actions -->
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                <flux:button 
+                    variant="ghost"
+                    wire:click="$set('showAddItemModal', false)"
+                >
+                    Cancel
+                </flux:button>
+                <flux:button 
+                    variant="primary"
+                    wire:click="addNewItem"
+                >
+                    <div class="flex items-center justify-center">
+                        <flux:icon.plus class="w-4 h-4 mr-2" />
+                        <span>Add Item</span>
+                    </div>
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
 </div>

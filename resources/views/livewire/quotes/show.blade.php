@@ -11,12 +11,25 @@
             
             <div class="flex gap-3">
                 <flux:button 
+                    variant="primary"
+                    href="{{ route('quotes.edit', $quote->id) }}"
+                    wire:navigate
+                >
+                    <div class="flex items-center justify-center">
+                        <flux:icon.pencil class="w-4 h-4 mr-2" />
+                        <span>Edit Quote</span>
+                    </div>
+                </flux:button>
+                
+                <flux:button 
                     variant="outline"
                     href="{{ route('quotes.pdf', $quote->id) }}"
                     target="_blank"
                 >
-                    <flux:icon.arrow-down-tray class="w-4 h-4 mr-2" />
-                    Download PDF
+                    <div class="flex items-center justify-center">
+                        <flux:icon.arrow-down-tray class="w-4 h-4 mr-2" />
+                        <span>Download PDF</span>
+                    </div>
                 </flux:button>
                 
                 <flux:button 
@@ -24,8 +37,10 @@
                     wire:click="deleteQuote"
                     wire:confirm="Are you sure you want to delete this quote?"
                 >
-                    <flux:icon.trash class="w-4 h-4 mr-2" />
-                    Delete
+                    <div class="flex items-center justify-center">
+                        <flux:icon.trash class="w-4 h-4 mr-2" />
+                        <span>Delete</span>
+                    </div>
                 </flux:button>
             </div>
         </div>
@@ -115,26 +130,52 @@
             
             <div class="space-y-3">
                 @foreach($quote->items as $item)
-                    <div class="p-4 bg-zinc-50 dark:text-zinc-800 rounded-lg">
+                    <div class="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
                         <div class="flex items-start justify-between gap-4">
                             <div class="flex-1">
-                                <p class="font-medium text-zinc-900 dark:text-white mb-2">
-                                    {{ $item->description }}
-                                </p>
-                                <div class="flex items-center gap-6 text-sm text-zinc-600 dark:text-zinc-400">
-                                    <div>
-                                        <span class="font-semibold">Time:</span> 
-                                        {{ number_format($item->time_hours, 2) }} hrs
-                                    </div>
-                                    <div>
-                                        <span class="font-semibold">Rate:</span> 
-                                        £{{ number_format($item->labour_rate, 2) }}/hr
-                                    </div>
-                                    <div>
-                                        <span class="font-semibold">Qty:</span> 
-                                        {{ $item->quantity }}
-                                    </div>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <flux:badge size="sm" :color="$item->type === 'labour' ? 'blue' : 'green'">
+                                        {{ ucfirst($item->type) }}
+                                    </flux:badge>
+                                    <p class="font-medium text-zinc-900 dark:text-white">
+                                        {{ $item->description }}
+                                    </p>
                                 </div>
+                                
+                                @if($item->type === 'labour')
+                                    <div class="flex items-center gap-6 text-sm text-zinc-600 dark:text-zinc-400">
+                                        <div>
+                                            <span class="font-semibold">Time:</span> 
+                                            {{ number_format($item->time_hours, 2) }} hrs
+                                        </div>
+                                        <div>
+                                            <span class="font-semibold">Rate:</span> 
+                                            £{{ number_format($item->labour_rate, 2) }}/hr
+                                        </div>
+                                        <div>
+                                            <span class="font-semibold">Qty:</span> 
+                                            {{ $item->quantity }}
+                                        </div>
+                                    </div>
+                                @else
+                                    {{-- Parts --}}
+                                    <div class="flex items-center gap-6 text-sm text-zinc-600 dark:text-zinc-400">
+                                        @if($item->part_number)
+                                            <div>
+                                                <span class="font-semibold">Part #:</span> 
+                                                {{ $item->part_number }}
+                                            </div>
+                                        @endif
+                                        <div>
+                                            <span class="font-semibold">Unit Price:</span> 
+                                            £{{ number_format($item->unit_price, 2) }}
+                                        </div>
+                                        <div>
+                                            <span class="font-semibold">Qty:</span> 
+                                            {{ $item->quantity }}
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
                             <p class="font-bold text-zinc-900 dark:text-white whitespace-nowrap">
                                 £{{ number_format($item->line_total, 2) }}
@@ -189,8 +230,10 @@
             href="{{ route('vehicle-details', $quote->vehicle->registration) }}"
             wire:navigate
         >
-            <flux:icon.arrow-left class="w-4 h-4 mr-2" />
-            Back to Vehicle
+            <div class="flex items-center justify-center">
+                <flux:icon.arrow-left class="w-4 h-4 mr-2" />
+                <span>Back to Vehicle</span>
+            </div>
         </flux:button>
     </div>
 </div>

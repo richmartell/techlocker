@@ -10,6 +10,12 @@
                 
                 <div>
                     <flux:heading size="xl">{{ $customer->full_name }}</flux:heading>
+                    @if($customer->organisation)
+                        <p class="text-zinc-600 dark:text-zinc-300 text-sm mt-1">
+                            <flux:icon.building-office-2 class="w-4 h-4 mr-1 inline-block" />
+                            {{ $customer->organisation }}
+                        </p>
+                    @endif
                     <div class="flex flex-wrap items-center gap-4 mt-2">
                         @if($customer->email)
                             <div class="flex items-center text-sm text-zinc-600 dark:text-zinc-300">
@@ -113,6 +119,16 @@
                                 <div>
                                     <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Last Name</label>
                                     <div class="text-zinc-900 dark:text-zinc-100">{{ $customer->last_name }}</div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Organisation</label>
+                                    <div class="text-zinc-900 dark:text-zinc-100">
+                                        @if($customer->organisation)
+                                            {{ $customer->organisation }}
+                                        @else
+                                            <span class="text-zinc-400">Not provided</span>
+                                        @endif
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email</label>

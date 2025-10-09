@@ -327,6 +327,7 @@ class Index extends Component
             
             $this->quoteItems[$itemId] = [
                 'id' => $itemId,
+                'type' => 'labour', // All items from quote builder are labour
                 'description' => $description,
                 'awNumber' => $awNumber,
                 'time' => $timeInHours,
@@ -524,6 +525,7 @@ class Index extends Component
             foreach ($this->quoteItems as $item) {
                 \App\Models\QuoteItem::create([
                     'quote_id' => $quote->id,
+                    'type' => 'labour', // All items from quote builder are labour
                     'description' => $item['description'],
                     'time_hours' => $item['time'],
                     'labour_rate' => $this->labourRate,

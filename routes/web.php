@@ -165,8 +165,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Quotes Routes
     Route::prefix('quotes')->group(function () {
+        Route::get('/', \App\Livewire\Quotes\Index::class)->name('quotes.index');
         Route::get('/create/{quote?}', \App\Livewire\Quotes\Create::class)->name('quotes.create');
         Route::get('/{quote}', \App\Livewire\Quotes\Show::class)->name('quotes.show');
+        Route::get('/{quote}/edit', \App\Livewire\Quotes\Edit::class)->name('quotes.edit');
         Route::get('/{quote}/pdf', [\App\Http\Controllers\QuoteController::class, 'downloadPdf'])->name('quotes.pdf');
     });
 
