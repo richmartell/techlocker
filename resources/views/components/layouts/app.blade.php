@@ -104,7 +104,7 @@
                         <flux:navlist.item href="#" wire:navigate>Transmission</flux:navlist.item>
                     </flux:navlist.group>
                     <flux:navlist.item icon="document-chart-bar" :href="route('drawings.index', $vehicle->registration)" :current="request()->routeIs('drawings.*')" wire:navigate>Drawings</flux:navlist.item>
-                    <flux:navlist.item icon="clock" :href="route('repair-times.index', $vehicle->registration)" :current="request()->routeIs('repair-times.*')" wire:navigate>Repair Times</flux:navlist.item>
+                    <flux:navlist.item icon="clock" :href="route('repair-times.index', $vehicle->registration)" :current="request()->routeIs('repair-times.*')" wire:navigate>Quote Builder</flux:navlist.item>
                 </flux:navlist>
             @endif
         </flux:sidebar>
@@ -157,7 +157,7 @@
                                 <flux:navlist.item href="#" wire:navigate>Transmission</flux:navlist.item>
                             </flux:navlist.group>
                             <flux:navlist.item icon="document-chart-bar" :href="route('drawings.index', $vehicle->registration)" :current="request()->routeIs('drawings.*')" wire:navigate>Drawings</flux:navlist.item>
-                            <flux:navlist.item icon="clock" :href="route('repair-times.index', $vehicle->registration)" :current="request()->routeIs('repair-times.*')" wire:navigate>Repair Times</flux:navlist.item>
+                            <flux:navlist.item icon="clock" :href="route('repair-times.index', $vehicle->registration)" :current="request()->routeIs('repair-times.*')" wire:navigate>Quote Builder</flux:navlist.item>
                         </flux:navlist>
                     </div>
                     <flux:separator class="md:hidden" />

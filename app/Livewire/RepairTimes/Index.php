@@ -40,8 +40,12 @@ class Index extends Component
     // Customer creation fields
     public $newCustomerFirstName = '';
     public $newCustomerLastName = '';
+    public $newCustomerOrganisation = '';
     public $newCustomerEmail = '';
     public $newCustomerPhone = '';
+    
+    // Pre-loaded customers linked to this vehicle
+    public $linkedCustomers = [];
 
     public function mount(string $registration)
     {
@@ -54,7 +58,24 @@ class Index extends Component
             $this->vatRate = $account->vat_registered ? 20 : 0;
         }
         
+        // Load customers already linked to this vehicle
+        $this->linkedCustomers = Customer::whereHas('vehicles', function ($query) {
+            $query->where('vehicle_id', $this->vehicle->id);
+        })
+        ->where('account_id', auth()->user()->account_id)
+        ->with('vehicles')
+        ->get()
+        ->toArray();
+        
         $this->loadRepairTimeTypes();
+    }
+    
+    public function updated($property)
+    {
+        // Automatically search when customerSearchTerm changes
+        if ($property === 'customerSearchTerm') {
+            $this->searchCustomers();
+        }
     }
 
     public function loadRepairTimeTypes()
@@ -377,6 +398,7 @@ class Index extends Component
         // Reset customer creation fields
         $this->newCustomerFirstName = '';
         $this->newCustomerLastName = '';
+        $this->newCustomerOrganisation = '';
         $this->newCustomerEmail = '';
         $this->newCustomerPhone = '';
     }
@@ -388,28 +410,36 @@ class Index extends Component
         $this->showConfirmCustomer = false;
         
         if (strlen($this->customerSearchTerm) < 2) {
+            Log::info('Search term too short', ['term' => $this->customerSearchTerm]);
             return;
         }
         
         $search = $this->customerSearchTerm;
         $accountId = auth()->user()->account_id;
         
+        Log::info('Searching customers', [
+            'search' => $search,
+            'account_id' => $accountId
+        ]);
+        
         // Search by name, email, organisation, or registration
         $this->searchResults = Customer::where('account_id', $accountId)
             ->where(function ($query) use ($search) {
-                // Search individual fields
-                $query->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('organisation', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    // Search concatenated full name (e.g., "Rich Martell")
-                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"])
-                    // Search with last name first (e.g., "Martell Rich")
-                    ->orWhereRaw("CONCAT(last_name, ' ', first_name) LIKE ?", ["%{$search}%"])
-                    // Search vehicles
-                    ->orWhereHas('vehicles', function ($subQuery) use ($search) {
-                        $subQuery->where('registration', 'like', "%{$search}%");
-                    });
+                // Search individual fields (first one must be 'where', rest are 'orWhere')
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('organisation', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        // Search concatenated full name (e.g., "Rich Martell")
+                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"])
+                        // Search with last name first (e.g., "Martell Rich")
+                        ->orWhereRaw("CONCAT(last_name, ' ', first_name) LIKE ?", ["%{$search}%"]);
+                })
+                // Search vehicles
+                ->orWhereHas('vehicles', function ($subQuery) use ($search) {
+                    $subQuery->where('registration', 'like', "%{$search}%");
+                });
             })
             ->with('vehicles')
             ->limit(10)
@@ -417,7 +447,11 @@ class Index extends Component
             
         Log::info('Customer search completed', [
             'search_term' => $search,
-            'results_count' => $this->searchResults->count()
+            'account_id' => $accountId,
+            'results_count' => $this->searchResults->count(),
+            'results' => $this->searchResults->map(function($c) {
+                return $c->id . ': ' . $c->first_name . ' ' . $c->last_name;
+            })->toArray()
         ]);
     }
     
@@ -532,6 +566,7 @@ class Index extends Component
         $this->showConfirmCustomer = false;
         $this->newCustomerFirstName = '';
         $this->newCustomerLastName = '';
+        $this->newCustomerOrganisation = '';
         $this->newCustomerEmail = '';
         $this->newCustomerPhone = '';
     }
@@ -542,6 +577,7 @@ class Index extends Component
             $validated = $this->validate([
                 'newCustomerFirstName' => 'required|string|max:80',
                 'newCustomerLastName' => 'required|string|max:80',
+                'newCustomerOrganisation' => 'nullable|string|max:191',
                 'newCustomerEmail' => 'nullable|email|max:191',
                 'newCustomerPhone' => 'nullable|string|max:30',
             ]);
@@ -573,6 +609,7 @@ class Index extends Component
             Log::info('Creating new customer', [
                 'first_name' => $this->newCustomerFirstName,
                 'last_name' => $this->newCustomerLastName,
+                'organisation' => $this->newCustomerOrganisation,
                 'account_id' => $accountId,
             ]);
             
@@ -580,6 +617,7 @@ class Index extends Component
                 'account_id' => $accountId,
                 'first_name' => $this->newCustomerFirstName,
                 'last_name' => $this->newCustomerLastName,
+                'organisation' => $this->newCustomerOrganisation ?: null,
                 'email' => $this->newCustomerEmail ?: null,
                 'phone' => $this->newCustomerPhone ?: null,
                 'source' => 'web',

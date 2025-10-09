@@ -3,7 +3,7 @@
     <div class="mb-8">
         <div class="flex items-center gap-3 mb-2">
             <flux:icon.clock class="w-6 h-6 text-zinc-500 dark:text-zinc-400" />
-            <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Repair Times</h1>
+            <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Quote Builder</h1>
         </div>
         <p class="text-zinc-600 dark:text-zinc-400">
             Select vehicle type and browse repair times for {{ $vehicle->registration }}
@@ -78,13 +78,13 @@
     <!-- Repair Time Nodes Display -->
     @if($selectedRepairTimeType && !$isLoadingNodes && count($repairTimeNodes) > 0)
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <!-- Left Column - Repair Times (2/3 width) -->
+            <!-- Left Column - Quote Builder (2/3 width) -->
             <div class="lg:col-span-2">
                 <flux:card>
                     <div class="p-6">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <flux:heading size="lg">Repair Times</flux:heading>
+                                <flux:heading size="lg">Available Repair Times</flux:heading>
                                 <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
                                     {{ $selectedRepairTimeType['make'] }} {{ $selectedRepairTimeType['model'] }} - {{ $selectedRepairTimeType['type'] }}
                                 </p>
@@ -496,6 +496,12 @@
                         </div>
                         
                         <flux:field>
+                            <flux:label>Organisation / Company</flux:label>
+                            <flux:input wire:model="newCustomerOrganisation" placeholder="Optional" />
+                            <flux:error name="newCustomerOrganisation" />
+                        </flux:field>
+                        
+                        <flux:field>
                             <flux:label>Email</flux:label>
                             <flux:input type="email" wire:model="newCustomerEmail" />
                             <flux:error name="newCustomerEmail" />
@@ -524,10 +530,49 @@
                     </div>
                 </div>
             @elseif(!$showConfirmCustomer)
+                <!-- Linked Customers (Pre-suggestions) -->
+                @if(count($linkedCustomers) > 0 && strlen($customerSearchTerm) < 2)
+                    <div class="mb-6">
+                        <p class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
+                            Customers linked to this vehicle:
+                        </p>
+                        <div class="space-y-2">
+                            @foreach($linkedCustomers as $customer)
+                                <div 
+                                    wire:click="selectCustomer('{{ $customer['id'] }}')"
+                                    class="p-4 border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 cursor-pointer transition"
+                                >
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <p class="font-semibold text-zinc-900 dark:text-white">
+                                                {{ $customer['first_name'] }} {{ $customer['last_name'] }}
+                                            </p>
+                                            @if(!empty($customer['organisation']))
+                                                <p class="text-sm text-zinc-700 dark:text-zinc-300 font-medium">
+                                                    {{ $customer['organisation'] }}
+                                                </p>
+                                            @endif
+                                            @if(!empty($customer['email']))
+                                                <p class="text-sm text-zinc-600 dark:text-zinc-400">
+                                                    {{ $customer['email'] }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                        <flux:badge color="blue" size="sm">Linked</flux:badge>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-2">Or search for a different customer:</p>
+                        </div>
+                    </div>
+                @endif
+                
                 <!-- Search Section -->
                 <div class="mb-6">
                     <flux:field>
-                        <flux:label>Search by name, email, or registration</flux:label>
+                        <flux:label>Search by name, organisation, email, or registration</flux:label>
                         <flux:input 
                             wire:model.live.debounce.300ms="customerSearchTerm" 
                             placeholder="Start typing to search..."
@@ -551,6 +596,11 @@
                                                 <p class="font-semibold text-zinc-900 dark:text-white">
                                                     {{ $customer->first_name }} {{ $customer->last_name }}
                                                 </p>
+                                                @if($customer->organisation)
+                                                    <p class="text-sm text-zinc-700 dark:text-zinc-300 font-medium">
+                                                        {{ $customer->organisation }}
+                                                    </p>
+                                                @endif
                                                 @if($customer->email)
                                                     <p class="text-sm text-zinc-600 dark:text-zinc-400">
                                                         {{ $customer->email }}
