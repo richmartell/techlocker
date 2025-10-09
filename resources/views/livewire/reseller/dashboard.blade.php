@@ -113,8 +113,5 @@
         <flux:button href="{{ route('reseller.customers') }}" variant="ghost">
             View Customers
         </flux:button>
-        <flux:button href="{{ route('reseller.commissions') }}" variant="ghost">
-            View Commissions
-        </flux:button>
     </div>
 </div>

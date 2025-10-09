@@ -3,7 +3,7 @@
 use App\Livewire\Reseller\Auth\Login as ResellerLogin;
 use App\Livewire\Reseller\Dashboard as ResellerDashboard;
 use App\Livewire\Reseller\Customers\Index as CustomersIndex;
-use App\Livewire\Reseller\Commissions\Index as CommissionsIndex;
+use App\Livewire\Reseller\Customers\Show as CustomersShow;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -32,6 +32,6 @@ Route::middleware('reseller')->prefix('reseller')->name('reseller.')->group(func
     Route::get('/dashboard', ResellerDashboard::class)->name('dashboard');
     Route::get('/customers', CustomersIndex::class)->name('customers');
     Route::get('/customers/create', \App\Livewire\Reseller\Customers\Create::class)->name('customers.create');
-    Route::get('/commissions', CommissionsIndex::class)->name('commissions');
+    Route::get('/customers/{account}', CustomersShow::class)->name('customers.show');
 });
 

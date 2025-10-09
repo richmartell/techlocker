@@ -41,6 +41,7 @@ class Account extends Model
         'trial_ends_at',
         'status',
         'subscribed_at',
+        'subscription_price',
     ];
 
     /**
@@ -52,6 +53,8 @@ class Account extends Model
         'is_active' => 'boolean',
         'hourly_labour_rate' => 'decimal:2',
         'labour_loading_percentage' => 'decimal:4',
+        'vat_registered' => 'boolean',
+        'subscription_price' => 'decimal:2',
         'trial_started_at' => 'datetime',
         'trial_ends_at' => 'datetime',
         'subscribed_at' => 'datetime',

@@ -27,6 +27,7 @@
                 <flux:table.column>Plan</flux:table.column>
                 <flux:table.column>Status</flux:table.column>
                 <flux:table.column>Created</flux:table.column>
+                <flux:table.column>Actions</flux:table.column>
             </flux:table.columns>
 
             <flux:table.rows>
@@ -65,10 +66,20 @@
                         <flux:table.cell>
                             <span class="text-sm text-zinc-600 dark:text-zinc-400">{{ $customer->created_at->format('M d, Y') }}</span>
                         </flux:table.cell>
+                        <flux:table.cell>
+                            <flux:button 
+                                size="sm" 
+                                variant="primary"
+                                href="{{ route('reseller.customers.show', $customer) }}"
+                                wire:navigate
+                            >
+                                View
+                            </flux:button>
+                        </flux:table.cell>
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="6" class="text-center text-zinc-500 dark:text-zinc-400 py-8">
+                        <flux:table.cell colspan="7" class="text-center text-zinc-500 dark:text-zinc-400 py-8">
                             <div class="flex flex-col items-center gap-4">
                                 <svg class="w-16 h-16 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
@@ -90,4 +101,5 @@
             </div>
         @endif
     </flux:card>
+
 </div>

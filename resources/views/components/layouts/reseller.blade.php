@@ -15,7 +15,6 @@
             <flux:navbar class="-mb-px max-lg:hidden">
                 <flux:navbar.item icon="home" :href="route('reseller.dashboard')" :current="request()->routeIs('reseller.dashboard')" wire:navigate>Dashboard</flux:navbar.item>
                 <flux:navbar.item icon="users" :href="route('reseller.customers')" :current="request()->routeIs('reseller.customers')" wire:navigate>Customers</flux:navbar.item>
-                <flux:navbar.item icon="banknotes" :href="route('reseller.commissions')" :current="request()->routeIs('reseller.commissions')" wire:navigate>Commissions</flux:navbar.item>
             </flux:navbar>
             
             <flux:spacer />
@@ -61,7 +60,6 @@
             <flux:navlist variant="outline">
                 <flux:navlist.item icon="home" :href="route('reseller.dashboard')" :current="request()->routeIs('reseller.dashboard')" wire:navigate>Dashboard</flux:navlist.item>
                 <flux:navlist.item icon="users" :href="route('reseller.customers')" :current="request()->routeIs('reseller.customers')" wire:navigate>Customers</flux:navlist.item>
-                <flux:navlist.item icon="banknotes" :href="route('reseller.commissions')" :current="request()->routeIs('reseller.commissions')" wire:navigate>Commissions</flux:navlist.item>
             </flux:navlist>
         </flux:sidebar>
 

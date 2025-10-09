@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Reseller\Customers;
 
+use App\Models\Account;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
